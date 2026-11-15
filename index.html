@@ -366,9 +366,9 @@ fetch("https://ddragon.leagueoflegends.com/api/versions.json").then(r=>r.json())
 /* ---------- HELPERS ---------- */
 const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const app=document.getElementById("app");
-const VIEWS=[["champions","Champions"],["traits","Traits"],["unlocks","Unlocks"],["builder","Team builder"],["tier-list","Tier list"],["early-game","Early game & gold"],["items","Items"]];
+const VIEWS=[["champions","Champions"],["traits","Traits"],["unlocks","Unlocks"],["builder","Team builder"],["combo-lab","Combo lab"],["tier-list","Tier list"],["early-game","Early game & gold"],["items","Items"]];
 let view="champions";
-const ui={q:"",cost:0,trait:"",compact:false,pq:"",pcost:0,ptrait:"",sel:-1,tmode:"comps",tsel:null,strat:"standard",del:null};
+const ui={q:"",cost:0,trait:"",compact:false,pq:"",pcost:0,ptrait:"",sel:-1,tmode:"comps",tsel:null,strat:"standard",del:null,gN:8,gStyle:"standard",gUnlock:"some",gMode:"random",gTrait:"",gChamp:"",gen:[]};
 const slots=u=>u.reduce((a,x)=>a+(x.n==="Baron Nashor"?2:1),0);
 function calcTraits(units){
   const by={};
@@ -431,6 +431,7 @@ function compCard(c){const ts=calcTraits(c.units).filter(x=>x.idx>=0&&x.def.k!==
   <div class="pills">${ts.map(x=>`<span class="pill band">${x.count}${x.def.stars?"★":""} ${esc(x.t)}</span>`).join("")}</div>
   <div class="chips">${c.units.map(u=>CH[u.n]?`<span class="chip k${CH[u.n].c}">${av(CH[u.n],22)}${esc(u.n)}${u.s>1?" "+"★".repeat(u.s):""}</span>`:"").join("")}</div>
   <div class="row"><label class="stat" for="res-${c.id}">Placements</label><input type="text" id="res-${c.id}" data-res="${c.id}" value="${esc(c.res||"")}" placeholder="e.g. 2 5 1" style="flex:1"></div>
+  <div class="row"><span class="stat">Log a game</span>${[1,2,3,4,5,6,7,8].map(n=>`<button class="btn sm" data-act="place" data-id="${c.id}" data-p="${n}" aria-label="Placed ${n}">${n}</button>`).join("")}${pl.length?`<button class="btn sm" data-act="unplace" data-id="${c.id}">Undo</button>`:""}</div>
   <textarea data-notes="${c.id}" placeholder="What happened: items, augments, unlock timing, what beat you" aria-label="Notes">${esc(c.notes||"")}</textarea>
   <div class="row"><button class="btn sm" data-act="load" data-id="${c.id}">Load</button><span class="stat">Tier</span>${["S","A","B","C","D"].map(t=>`<button class="btn sm ${c.tier===t?"on":""}" data-act="ctier" data-id="${c.id}" data-t="${t}">${t}</button>`).join("")}
   <button class="btn sm danger" data-act="del" data-id="${c.id}" style="margin-left:auto">${ui.del===c.id?"Tap again to delete":"Delete"}</button></div></div>`}
@@ -456,6 +457,81 @@ function vBuilder(){const b=state.board,n=slots(b.units),gold=b.units.reduce((a,
   ${IDEAS.map((x,i)=>`<div class="idea"><div class="row" style="justify-content:space-between"><b>${esc(x[0])}</b><button class="btn sm" data-act="idea" data-i="${i}">Load</button></div><p>${esc(x[1])}</p><div class="chips">${x[2].map(n=>`<span class="chip k${CH[n].c} ${CH[n].u?"lock":""}">${av(CH[n],22)}${esc(n)}</span>`).join("")}</div></div>`).join("")}
   <h3 style="margin-top:14px">Every vertical</h3><div class="chips">${TRAITS.filter(t=>t.k!=="solo"&&t.bp.length>1).map(t=>`<button class="btn sm" data-act="vertical" data-t="${esc(t.n)}">${esc(t.n)} · ${t.m.length}</button>`).join("")}</div></section>
 </div>`}
+
+
+/* ---------- COMBO GENERATOR ----------
+   Picks 2-3 target traits, then builds a team by randomised greedy search plus swap improvement.
+   Score rewards every breakpoint hit (targets count triple), punishes traits left one short, and wants a front line. */
+const FRONT=["Bodyguard","Juggernaut","Frontman"];
+const STYLES={reroll:["Reroll (1-3 costs)",c=>c.c<=3,{4:0,5:0,7:0}],standard:["Standard (up to 5-costs)",c=>c.c<=5,{5:2,7:0}],late:["Late game (everything)",c=>true,{5:4,7:1}]};
+const placements=c=>(c.res||"").split(/[\s,]+/).map(Number).filter(n=>n>=1&&n<=8);
+const genStar=c=>c.c<=3?2:1;
+const asUnits=names=>names.map(n=>({n,s:genStar(CH[n]),it:[]}));
+function scoreTeam(names,targets){const ts=calcTraits(asUnits(names));let s=0;
+  for(const x of ts){const tgt=targets.includes(x.t);
+    if(x.def.k==="solo"||x.t==="Collab"||(!tgt&&x.def.bp[0]===1&&x.count===1)){s+=.3;continue}
+    if(x.idx>=0)s+=tgt?3*(x.idx+1):1+.6*x.idx;else s-=tgt?1.2:.45;
+    const nxt=x.def.bp.find(b=>b>x.count);if(tgt&&nxt&&nxt-x.count===1)s-=.6}
+  targets.forEach(t=>{if(!ts.some(x=>x.t===t&&x.idx>=0))s-=5});
+  const fr=names.filter(n=>CH[n].t.some(t=>FRONT.includes(t))).length;s+=Math.min(fr,3)*1.1;if(fr<2)s-=3;
+  if(names.length>=8&&!names.some(n=>CH[n].c>=4))s-=1.5;return s}
+function testedPairs(){const set=new Set();state.comps.filter(c=>placements(c).length).forEach(c=>{const a=calcTraits(c.units).filter(x=>x.idx>=0&&x.def.k!=="solo").map(x=>x.t).sort();for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++)set.add(a[i]+"+"+a[j])});return set}
+function traitStats(){const m={};state.comps.forEach(c=>{const pl=placements(c);if(!pl.length)return;calcTraits(c.units).filter(x=>x.idx>=0&&x.def.k!=="solo").forEach(x=>{const k=x.t+" "+x.def.bp[x.idx];const o=m[k]=m[k]||{k,t:x.t,g:0,sum:0,top:0,comps:0};o.comps++;pl.forEach(p=>{o.g++;o.sum+=p;if(p<=4)o.top++})})});return Object.values(m).sort((a,b)=>a.sum/a.g-b.sum/b.g)}
+function pickTargets(pool){const multi=TRAITS.filter(t=>t.k!=="solo"&&t.n!=="Collab"&&t.bp.length>1&&pool.filter(c=>c.t.includes(t.n)).length>=t.bp[0]/(t.stars?2:1));
+  const rnd=a=>a[Math.floor(Math.random()*a.length)];const out=[];
+  if(ui.gTrait&&TR[ui.gTrait])out.push(ui.gTrait);
+  if(ui.gChamp&&CH[ui.gChamp]){const t=CH[ui.gChamp].t.filter(t=>TR[t].k!=="solo"&&!out.includes(t));if(t.length&&out.length<2)out.push(rnd(t))}
+  const want=2+(Math.random()<.4?1:0);
+  if(ui.gMode==="cover"){const seen=testedPairs();for(let i=0;i<80&&out.length<2;i++){const a=out[0]||rnd(multi).n,b=rnd(multi).n;if(a!==b&&!seen.has([a,b].sort().join("+"))){if(!out.length)out.push(a);out.push(b)}}}
+  if(ui.gMode==="best"){const st=traitStats();const bag=[];st.forEach(s=>{const w=Math.max(1,Math.round((9-s.sum/s.g)*2));for(let i=0;i<w;i++)bag.push(s.t)});for(let i=0;i<20&&bag.length&&out.length<1;i++){const t=rnd(bag);if(multi.some(m=>m.n===t)&&!out.includes(t))out.push(t)}}
+  for(let i=0;i<60&&out.length<want;i++){const t=rnd(multi).n;if(out.includes(t))continue;
+    // prefer a partner that shares at least one champion with what we have, so the combo can overlap
+    const link=!out.length||pool.some(c=>c.t.includes(t)&&out.some(o=>c.t.includes(o)));if(link||i>30)out.push(t)}
+  return out}
+function genOne(){const st=STYLES[ui.gStyle];const N=ui.gN;
+  let pool=CHAMPS.filter(c=>st[1](c)&&(ui.gUnlock!=="none"||!c.u));
+  const targets=pickTargets(pool);const caps=st[2];
+  const fits=(team,c)=>{if(team.includes(c.n))return false;if(c.n.startsWith("Akali")&&team.some(n=>n.startsWith("Akali")))return false;
+    if(slots(team.map(n=>({n})))+(c.n==="Baron Nashor"?2:1)>N)return false;
+    if(caps[c.c]!==undefined&&team.filter(n=>CH[n].c===c.c).length>=caps[c.c])return false;
+    if(ui.gUnlock==="some"&&c.u&&team.filter(n=>CH[n].u).length>=Math.max(1,Math.floor(N/3)))return false;return true};
+  let best=null,bestS=-1e9;
+  for(let r=0;r<4;r++){let team=[];if(ui.gChamp&&CH[ui.gChamp])team.push(ui.gChamp);
+    for(;;){let pick=null,ps=-1e9;const base=scoreTeam(team,targets);
+      for(const c of pool){if(!fits(team,c))continue;const g=scoreTeam([...team,c.n],targets)-base+Math.random()*1.2+(c.t.some(t=>targets.includes(t))?.8:0);if(g>ps){ps=g;pick=c}}
+      if(!pick)break;team.push(pick.n)}
+    let s=scoreTeam(team,targets);
+    for(let i=0;i<120;i++){const out=Math.floor(Math.random()*team.length);if(team[out]===ui.gChamp)continue;const c=pool[Math.floor(Math.random()*pool.length)];const rest=team.filter((_,j)=>j!==out);if(!fits(rest,c))continue;const s2=scoreTeam([...rest,c.n],targets);if(s2>s){team=[...rest,c.n];s=s2}}
+    if(s>bestS){bestS=s;best=team}}
+  const act=calcTraits(asUnits(best)).filter(x=>x.idx>=0&&x.def.k!=="solo");
+  const name=act.sort((a,b)=>targets.includes(b.t)-targets.includes(a.t)).slice(0,3).map(x=>x.t+" "+x.def.bp[x.idx]).join(" · ")||"Mixed board";
+  return{names:best.sort((a,b)=>CH[a].c-CH[b].c),targets,name,sig:[...best].sort().join("|"),score:bestS}}
+function layout(names){const fr=names.filter(n=>CH[n].t.some(t=>FRONT.includes(t))),bk=names.filter(n=>!fr.includes(n));const u=[];
+  fr.forEach((n,i)=>u.push({n,h:i<7?i:7+i-7,s:genStar(CH[n]),it:[]}));bk.forEach((n,i)=>u.push({n,h:i<7?21+i:14+i-7,s:genStar(CH[n]),it:[]}));return u}
+function generate(k){const have=new Set(state.comps.map(c=>c.units.map(u=>u.n).sort().join("|")));const out=[];
+  for(let i=0;i<k*6&&out.length<k;i++){const g=genOne();if(have.has(g.sig)||out.some(o=>o.sig===g.sig))continue;out.push(g)}ui.gen=out}
+function queueGen(g){state.comps.unshift({id:"g"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36),name:g.name,level:ui.gN,units:layout(g.names),tier:"",res:"",notes:"",src:"gen"})}
+function genCard(g,i){const ts=calcTraits(asUnits(g.names)).filter(x=>x.idx>=0&&x.def.k!=="solo");const un=g.names.filter(n=>CH[n].u);
+  return `<div class="comp"><div class="row" style="justify-content:space-between"><b>${esc(g.name)}</b><span class="stat">${slots(g.names.map(n=>({n})))} slots</span></div>
+  <div class="pills">${ts.map(x=>`<span class="pill ${g.targets.includes(x.t)?"band":""}">${x.count}${x.def.stars?"★":""} ${esc(x.t)}</span>`).join("")}</div>
+  <div class="chips">${g.names.map(n=>`<span class="chip k${CH[n].c} ${CH[n].u?"lock":""}">${av(CH[n],22)}${esc(n)}</span>`).join("")}</div>
+  ${un.length?`<p class="stat" style="margin:0">Needs ${un.length} unlock${un.length>1?"s":""}: ${esc(un.join(", "))}</p>`:""}
+  <div class="row"><button class="btn sm pri" data-act="gqueue" data-i="${i}">Add to test list</button><button class="btn sm" data-act="gopen" data-i="${i}">Open in builder</button></div></div>`}
+function vCombo(){const todo=state.comps.filter(c=>!placements(c).length),done=state.comps.filter(c=>placements(c).length);const st=traitStats();
+  const sel=(id,val,opts)=>`<select id="${id}">${opts.map(([v,l])=>`<option value="${esc(v)}" ${val===v?"selected":""}>${esc(l)}</option>`).join("")}</select>`;
+  return `<h1>Combo lab</h1><p class="lead">Generates random boards that actually hit breakpoints. Add the ones you like to your test list, play them on PBE, then tap your placement. The more results you log, the more the generator can steer.</p>
+<section class="panel"><h2>Generator</h2><div class="row filters">
+  <label class="stat" for="gN">Team size</label>${sel("gN",String(ui.gN),[5,6,7,8,9,10].map(n=>[String(n),String(n)]))}
+  ${sel("gStyle",ui.gStyle,Object.entries(STYLES).map(([k,v])=>[k,v[0]]))}
+  ${sel("gUnlock",ui.gUnlock,[["none","No unlock champions"],["some","A few unlocks"],["any","Any unlocks"]])}
+  ${sel("gMode",ui.gMode,[["random","Fully random traits"],["cover","Trait pairs I haven't tested"],["best","Build on my best traits"]])}
+  ${sel("gTrait",ui.gTrait,[["","Any main trait"],...TRAITS.filter(t=>t.k!=="solo").map(t=>[t.n,"Must include "+t.n])])}
+  ${sel("gChamp",ui.gChamp,[["","Any champion"],...CHAMPS.map(c=>[c.n,"Must include "+c.n])])}
+  <button class="btn pri" data-act="gen">Generate 6 combos</button>${ui.gen.length?`<button class="btn" data-act="gall">Add all to test list</button>`:""}</div>
+  ${ui.gen.length?`<div class="comps">${ui.gen.map(genCard).join("")}</div>`:`<p class="stat">Highlighted pills are the traits the generator aimed for. 1- to 3-cost units are assumed 2-star, which matters for K|DA's star count.</p>`}</section>
+<section class="panel" style="margin-top:14px"><h2>To test · ${todo.length}</h2>${todo.length?`<div class="comps">${todo.map(compCard).join("")}</div>`:`<p class="stat">Nothing waiting. Generate combos above or save a board from the team builder.</p>`}</section>
+<section class="panel" style="margin-top:14px"><h2>Results by trait</h2>${st.length?`<div class="scroll"><table><thead><tr><th>Trait at breakpoint</th><th>Comps</th><th>Games</th><th>Avg place</th><th>Top 4</th></tr></thead><tbody>${st.map(s=>`<tr><td><b>${esc(s.k)}</b></td><td>${s.comps}</td><td>${s.g}</td><td>${(s.sum/s.g).toFixed(2)}</td><td>${Math.round(s.top/s.g*100)}%</td></tr>`).join("")}</tbody></table></div><p class="stat" style="margin:10px 0 0">Each game counts once for every trait active in that comp, so read this as a rough signal until you have 5+ games per row.</p>`:`<p class="stat">Fills in after you log your first placement.</p>`}</section>
+<section class="panel" style="margin-top:14px"><h2>Tested · ${done.length}</h2>${done.length?`<div class="comps">${done.sort((a,b)=>{const x=placements(a),y=placements(b);return x.reduce((p,q)=>p+q,0)/x.length-y.reduce((p,q)=>p+q,0)/y.length}).map(compCard).join("")}</div>`:`<p class="stat">Comps move here once they have a placement.</p>`}</section>`}
 
 const TIERS=["S","A","B","C","D"];
 function vTiers(){const m=ui.tmode;let items;
@@ -514,7 +590,7 @@ ${COMPONENTS.map((c,i)=>`<tr><td>${esc(c)}</td>${COMPONENTS.map((d,j)=>`<td clas
 /* ---------- RENDER + EVENTS ---------- */
 function render(){
   document.getElementById("nav").innerHTML=VIEWS.map(([k,l])=>`<a href="#${k}" class="${view===k?"on":""}">${l}</a>`).join("");
-  app.innerHTML={champions:vChampions,unlocks:vUnlocks,traits:vTraits,builder:vBuilder,"tier-list":vTiers,"early-game":vEarly,items:vItems}[view]();
+  app.innerHTML={champions:vChampions,unlocks:vUnlocks,traits:vTraits,builder:vBuilder,"combo-lab":vCombo,"tier-list":vTiers,"early-game":vEarly,items:vItems}[view]();
 }
 function route(){const h=location.hash.slice(1);view=VIEWS.some(v=>v[0]===h)?h:"champions";ui.sel=-1;render();window.scrollTo(0,0)}
 function freeHex(){const used=new Set(state.board.units.map(u=>u.h));for(let i=0;i<28;i++)if(!used.has(i))return i;return -1}
@@ -547,6 +623,12 @@ document.addEventListener("click",e=>{const el=e.target.closest("[data-act]");if
     case "tpick":ui.tsel=ui.tsel===el.dataset.key?null:el.dataset.key;break;
     case "tmove":if(ui.tsel!==null){const t=el.dataset.t;if(ui.tmode==="comps"){const c=state.comps.find(c=>c.id===ui.tsel);if(c)c.tier=t}else{const m=state.tiers[ui.tmode];if(t)m[ui.tsel]=t;else delete m[ui.tsel]}ui.tsel=null;save()}break;
     case "strat":ui.strat=el.dataset.k;break;
+    case "gen":generate(6);break;
+    case "gqueue":{const g=ui.gen[+el.dataset.i];if(g){queueGen(g);ui.gen.splice(+el.dataset.i,1);save()}break}
+    case "gall":ui.gen.forEach(queueGen);ui.gen=[];save();break;
+    case "gopen":{const g=ui.gen[+el.dataset.i];if(g){b.id=null;b.name=g.name;b.level=ui.gN;b.units=layout(g.names);ui.sel=-1;save();go("builder");return}break}
+    case "place":{const c=state.comps.find(c=>c.id===el.dataset.id);if(c){c.res=((c.res||"").trim()+" "+el.dataset.p).trim();save()}break}
+    case "unplace":{const c=state.comps.find(c=>c.id===el.dataset.id);if(c){c.res=placements(c).slice(0,-1).join(" ");save()}break}
     case "export":{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:"application/json"}));a.download="prismatic-tour-lab.json";a.click();return}
     case "import":document.getElementById("imp").click();return;
     default:return}
@@ -557,6 +639,8 @@ document.addEventListener("input",e=>{const t=e.target;
   else if(t.id==="bname"){state.board.name=t.value}});
 document.addEventListener("change",e=>{const t=e.target;
   if(t.id==="imp"){const f=t.files[0];if(f)f.text().then(s=>{state=norm(JSON.parse(s));save();render()}).catch(()=>{});t.value="";return}
+  if(["gStyle","gUnlock","gMode","gTrait","gChamp"].includes(t.id)){ui[t.id]=t.value;return}
+  if(t.id==="gN"){ui.gN=+t.value;return}
   if(t.id==="ftrait"){ui.trait=t.value;render()}
   else if(t.id==="ptrait"){ui.ptrait=t.value;render()}
   else if(t.id==="bname"){save()}
