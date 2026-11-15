@@ -187,7 +187,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .idea p{margin:0;font-size:13.5px;color:var(--mute)}
 .comp{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;background:#12142b}
 .comps{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-.aS{--k:#c4cde0}.aG{--k:var(--c5)}.aP{--k:var(--c7)}
+.aH{--k:var(--cy)}.aS{--k:#c4cde0}.aG{--k:var(--c5)}.aP{--k:var(--c7)}
 .aug{font-size:12px;font-weight:600;border-radius:99px;padding:1px 9px;border:1px solid var(--k);color:var(--k);background:color-mix(in srgb,var(--k) 12%,transparent);white-space:nowrap}
 .acard{border-left:3px solid var(--k)}
 .augslot{background:none;border:0;padding:0}
@@ -376,7 +376,7 @@ const TRAITS=[
 const TR=Object.fromEntries(TRAITS.map(t=>[t.n,t]));
 TRAITS.forEach(t=>t.m=CHAMPS.filter(c=>c.t.includes(t.n)));
 
-const TIERN={S:"Silver",G:"Gold",P:"Prismatic"};
+const TIERN={S:"Silver",G:"Gold",P:"Prismatic",H:"Hero"};
 const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
 const AUGS=(typeof AUG_RAW==="string"?AUG_RAW:"").split("\n").filter(Boolean).map(l=>{const [n,t,d]=l.split("~");
   const txt=(n+". "+d).replace(/K\/DA/g,"K|DA"),has=w=>new RegExp("(^|[^A-Za-z])"+reEsc(w)+"s?(?![A-Za-z])").test(txt);
@@ -507,13 +507,13 @@ ${sec("band","Bands","Origins. K|DA, Heartsteel, Pentakill and True Damage share
 
 function augList(){const q=ui.aq.toLowerCase();
   const list=AUGS.filter(a=>(!ui.atier||a.t===ui.atier)&&(!ui.aset||a.set)&&(!ui.atrait||a.traits.includes(ui.atrait))&&(!q||(a.n+" "+a.d).toLowerCase().includes(q)));
-  return ["S","G","P"].map(t=>{const g=list.filter(a=>a.t===t);return g.length?`<div class="costh a${t}"><span class="dot"></span>${TIERN[t]} · ${g.length}</div><div class="cards">${g.map(a=>`<article class="card acard a${a.t}"><div class="hd"><span class="nm">${esc(a.n)}</span><span class="cost">${TIERN[a.t]}</span></div><div class="ab">${esc(a.d)}</div>
+  return ["H","S","G","P"].map(t=>{const g=list.filter(a=>a.t===t);return g.length?`<div class="costh a${t}"><span class="dot"></span>${TIERN[t]} · ${g.length}</div><div class="cards">${g.map(a=>`<article class="card acard a${a.t}"><div class="hd"><span class="nm">${esc(a.n)}</span><span class="cost">${TIERN[a.t]}</span></div><div class="ab">${esc(a.d)}</div>
   ${a.set?`<div class="chips">${a.traits.map(x=>`<span class="pill band">${esc(x)}</span>`).join("")}${a.champs.map(n=>chip(CH[n],"add-go")).join("")}</div>`:""}
   <div style="margin-top:auto"><button class="btn sm ${(state.board.augs||[]).includes(a.n)?"on":""}" data-act="aug" data-a="${esc(a.n)}">${(state.board.augs||[]).includes(a.n)?"On your board":"Add to builder"}</button></div></article>`).join("")}</div>`:""}).join("")||`<p class="lead">No augment matches those filters.</p>`}
-function vAugs(){return `<h1>Set 19 augments</h1><p class="lead">${AUGS.length} augments from the reveal: ${AUGS.filter(a=>a.t==="S").length} silver, ${AUGS.filter(a=>a.t==="G").length} gold, ${AUGS.filter(a=>a.t==="P").length} prismatic. ${AUGS.filter(a=>a.set).length} are tied to a Set 19 trait or champion.</p>
-<p class="note">Values are not published yet, and Riot can still add or cut augments before launch. Text is a shortened summary; + and ++ versions are folded into the base augment.</p>
+function vAugs(){return `<h1>Set 19 augments</h1><p class="lead">${AUGS.length} augments: ${AUGS.filter(a=>a.t==="S").length} silver, ${AUGS.filter(a=>a.t==="G").length} gold, ${AUGS.filter(a=>a.t==="P").length} prismatic, plus ${AUGS.filter(a=>a.t==="H").length} hero augments known so far. ${AUGS.filter(a=>a.set).length} are tied to a Set 19 trait or champion.</p>
+<p class="note">Values are not published yet, and Riot can still add or cut augments before launch. Riot says the set has 363 augments including six hero augments; the hero ones here are from reports, so their names and tiers are unconfirmed. Text is a shortened summary; + and ++ versions are folded into the base augment.</p>
 <div class="row filters"><input type="text" id="aq" placeholder="Search augments" value="${esc(ui.aq)}" aria-label="Search augments">
-${[["","All"],["S","Silver"],["G","Gold"],["P","Prismatic"]].map(([k,l])=>`<button class="btn sm ${ui.atier===k?"on":""}" data-act="atier" data-k="${k}">${l}</button>`).join("")}
+${[["","All"],["H","Hero"],["S","Silver"],["G","Gold"],["P","Prismatic"]].map(([k,l])=>`<button class="btn sm ${ui.atier===k?"on":""}" data-act="atier" data-k="${k}">${l}</button>`).join("")}
 <button class="btn sm ${ui.aset?"on":""}" data-act="aset">Trait and champion augments only</button>
 <select id="atrait" aria-label="Filter augments by trait"><option value="">Any trait</option>${TRAITS.filter(t=>AUGS.some(a=>a.traits.includes(t.n))).map(t=>`<option ${ui.atrait===t.n?"selected":""}>${esc(t.n)}</option>`).join("")}</select></div>
 <div id="alist">${augList()}</div>`}
@@ -580,7 +580,7 @@ function vBuilder(){const b=state.board,n=slots(b.units),gold=b.units.reduce((a,
   ${ui.ptab==="champs"?`<div class="row filters"><input type="text" id="pq" placeholder="Search champions or traits" value="${esc(ui.pq)}" aria-label="Search champions to add">
   ${[["cost","Cost"],["name","Name"],["origin","Origin"],["class","Class"]].map(([k,l])=>`<button class="btn sm ${ui.psort===k?"on":""}" data-act="psort" data-k="${k}">${l}</button>`).join("")}
   <select id="ptrait" aria-label="Filter picker by trait"><option value="">Any trait</option>${TRAITS.map(t=>`<option ${ui.ptrait===t.n?"selected":""}>${esc(t.n)}</option>`).join("")}</select></div>`:ui.ptab==="augs"?`<div class="row filters"><input type="text" id="baq" placeholder="Search augments" value="${esc(ui.baq)}" aria-label="Search augments to add">
-  ${[["","All"],["S","Silver"],["G","Gold"],["P","Prismatic"]].map(([k,l])=>`<button class="btn sm ${ui.batier===k?"on":""}" data-act="batier" data-k="${k}">${l}</button>`).join("")}<span class="stat">Pick up to 3. Tap again to remove.</span></div>`:`<p class="stat" style="margin:0 0 12px">${ui.sel>=0&&b.units[ui.sel]?`Tap an item to give it to <b>${esc(b.units[ui.sel].n)}</b>, or drag it onto any unit.`:ui.itemSel?`<b>${esc(ui.itemSel)}</b> is armed: tap a unit on the board to equip it.`:"Drag an item onto a unit, or tap an item and then tap a unit."}</p>`}
+  ${[["","All"],["H","Hero"],["S","Silver"],["G","Gold"],["P","Prismatic"]].map(([k,l])=>`<button class="btn sm ${ui.batier===k?"on":""}" data-act="batier" data-k="${k}">${l}</button>`).join("")}<span class="stat">Pick up to 3. Tap again to remove.</span></div>`:`<p class="stat" style="margin:0 0 12px">${ui.sel>=0&&b.units[ui.sel]?`Tap an item to give it to <b>${esc(b.units[ui.sel].n)}</b>, or drag it onto any unit.`:ui.itemSel?`<b>${esc(ui.itemSel)}</b> is armed: tap a unit on the board to equip it.`:"Drag an item onto a unit, or tap an item and then tap a unit."}</p>`}
   <div id="pick">${pickHTML()}</div></section>
 <section class="panel wide"><h2>Saved comps · ${state.comps.length}</h2>${state.comps.length?`<div class="comps">${state.comps.map(compCard).join("")}</div>`:`<p class="stat">Nothing saved yet. Load an idea below, adjust it, and save it under your own name.</p>`}</section>
 <section class="panel wide"><h2>Test queue</h2><p class="stat" style="margin:0 0 6px">Starting points built from trait overlap. None of these has been played; each one is a question to answer.</p>

@@ -296,4 +296,7 @@ Urf's Grab Bag~P~Gain a Spatula, components and gold.
 Verticality III~P~Champions gain AD, AP, Armor and Magic Resist for each ally sharing a trait with them.
 Wand Overflow~P~Gain Needlessly Large Rods. Your Rods grant Attack Speed.
 We Stick Together~P~Gain an Emblem for a random trait and a completed item anvil. Allies with that trait gain Attack Speed.
-Worth the Wait II~P~Gain 2 copies of a random 2-cost, then another copy every round for the rest of the game.`;
+Worth the Wait II~P~Gain 2 copies of a random 2-cost, then another copy every round for the rest of the game.
+Renekton hero augment~H~Name not confirmed (heard on stream as something like "Lifeguard to the Rescue"). Renekton sits out the start of combat, then jumps in once a unit drops low (about 30% Health was mentioned), gains a shield and goes on an attack frenzy.
+Annie hero augment~H~Name not confirmed. Annie rides on the back of Tibbers and throws fireballs.
+Lillia hero augment~H~Name not confirmed. Lillia leaps into the enemy backline and applies poison.`;
