@@ -429,7 +429,7 @@ fetch("img/items/manifest.json").then(r=>r.json()).then(a=>{ITEMIMG=new Set(a);r
 const isEmb=n=>n.startsWith("Emblem: ");
 function itIcon(n,s){const e=isEmb(n),t=e?n.slice(8):n,key=slug(e?t+"emblem":n);
   const lab=t.split(/[^A-Za-z]+/).filter(Boolean).map(w=>w[0]).join("").slice(0,3).toUpperCase();
-  return `<span class="it ${e?"emb":""}" style="--s:${s}px" title="${esc(n)}">${lab}${ITEMIMG.has(key)?`<img alt="" draggable="false" src="img/items/${key}.png">`:""}</span>`}
+  return `<span class="it ${e?"emb":""}" style="--s:${s}px" title="${esc(n)}">${lab}${!e&&ITEMIMG.has(key)?`<img alt="" draggable="false" src="img/items/${key}.png">`:""}</span>`}
 function equip(i,name){const u=state.board.units[i];if(!u)return;u.it=(u.it||[]).filter(Boolean);if(u.it.length<3){u.it.push(name);save()}}
 function compNeeded(){const m={};state.board.units.forEach(u=>(u.it||[]).filter(Boolean).forEach(n=>{if(isEmb(n))return;
   for(let i=0;i<8;i++)for(let j=i;j<8;j++)if(RECIPES[i][j]===n){m[COMPONENTS[i]]=(m[COMPONENTS[i]]||0)+1;m[COMPONENTS[j]]=(m[COMPONENTS[j]]||0)+1;return}
