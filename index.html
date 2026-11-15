@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prismatic Tour Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: sticky top nav of sections (set database, builder, tier list, econ, items); card grids grouped by cost; builder = hex board + trait rail. Single dark stage-light theme by choice. */
+:root{
+  color-scheme:dark;
+  --bg:#12121c; --panel:#1b1c2b; --panel2:#24263a; --line:#34374f;
+  --ink:#eceaf6; --mute:#a3a4bd; --accent:#ff5fa2; --accent2:#5fd4ff;
+  --c1:#8f97aa; --c2:#35b97a; --c3:#4592f5; --c4:#c257e6; --c5:#f2b63a; --c7:#ff7ad1;
+  --good:#4fd08a; --warn:#f2b63a; --bad:#ff6b6b;
+  --display:"Unbounded",system-ui,sans-serif; --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --hx:58px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+a{color:var(--accent2)}
+header.top{position:sticky;top:0;z-index:20;background:rgba(18,18,28,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.topin{max-width:1280px;margin:0 auto;padding:10px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.02em;white-space:nowrap}
+.brand b{background:linear-gradient(90deg,var(--accent),var(--c5),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+nav{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0}
+nav a{padding:7px 12px;border-radius:8px;text-decoration:none;color:var(--mute);font-weight:600;white-space:nowrap}
+nav a.on{background:var(--panel2);color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent)}
+.sync{font-size:12px;color:var(--mute);border:1px solid var(--line);border-radius:99px;padding:3px 10px;white-space:nowrap}
+.sync.ok{color:var(--good);border-color:#2c5a45}
+main{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
+h1{font-family:var(--display);font-size:22px;margin:0 0 4px;text-wrap:balance}
+h2{font-family:var(--display);font-size:14px;margin:0 0 10px;letter-spacing:.03em;text-wrap:balance}
+h3{font-size:15px;margin:0 0 6px}
+.lead{color:var(--mute);margin:0 0 14px;max-width:70ch}
+.note{background:#2a2333;border:1px solid #57406a;border-radius:10px;padding:9px 12px;color:#e6d9f5;font-size:13.5px;margin:0 0 16px;max-width:95ch}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filters{margin:0 0 14px}
+input[type=text],select,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+textarea{width:100%;resize:vertical;min-height:54px}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-weight:600}
+.btn:hover{border-color:var(--accent2)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#1a0c14}
+.btn.sm{padding:4px 9px;font-size:13px}
+.btn.on{border-color:var(--accent);color:var(--accent)}
+.btn.danger{color:var(--bad)}
+.costh{display:flex;align-items:center;gap:10px;margin:20px 0 10px;font-family:var(--display);font-size:13px}
+.costh::after{content:"";flex:1;height:1px;background:var(--line)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.k1{--k:var(--c1)}.k2{--k:var(--c2)}.k3{--k:var(--c3)}.k4{--k:var(--c4)}.k5{--k:var(--c5)}.k7{--k:var(--c7)}
+.dot{background:var(--k)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--k,var(--line));border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:7px}
+.card .hd{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card .nm{font-weight:700;font-size:16px}
+.cost{font-size:12px;font-weight:700;color:var(--k);white-space:nowrap}
+.pills{display:flex;gap:5px;flex-wrap:wrap}
+.pill{font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:1px 9px;color:var(--ink)}
+.pill.band{border-color:#5a4a78;color:#d9c8ff}
+.ab{font-size:13px;color:var(--mute)}
+.ab b{color:var(--ink)}
+.unlock{font-size:13px;background:#2b2618;border:1px solid #6a5820;border-radius:8px;padding:6px 9px;color:#f5e3a8}
+.unlock::before{content:"Unlock: ";font-weight:700}
+.compact .card .ab,.compact .card .unlock{display:none}
+.compact .cards{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.av{position:relative;display:inline-grid;place-items:center;width:var(--s,48px);height:var(--s,48px);border-radius:8px;border:2px solid var(--k,var(--line));background:var(--panel2);overflow:hidden;flex:none;font-size:calc(var(--s,48px)*.3);font-weight:700;color:var(--mute)}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.chip .av{border-width:1px;border-radius:5px}
+.tile{background:none;border:0;padding:0;width:64px;display:grid;justify-items:center;gap:3px;font-size:11px;font-weight:600;line-height:1.15;color:var(--ink);text-align:center;position:relative}
+.tile:hover .av{border-color:#fff}
+.tile.onb{opacity:.4}
+.tile.lock::after{content:"🔒";position:absolute;top:-4px;right:0;font-size:12px}
+.hex img{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);object-fit:cover;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);opacity:.6}
+.hex.full span{text-shadow:0 1px 3px #000,0 0 6px #000}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--k,var(--line));border-radius:7px;padding:4px 9px;font-size:13px;font-weight:600;text-align:left;display:inline-flex;align-items:center;gap:6px}
+.chip.lock::after{content:" 🔒";font-size:11px}
+.chip:hover{border-color:var(--accent2);border-left-color:var(--k,var(--accent2))}
+.chip.sel{outline:2px solid var(--accent);outline-offset:1px}
+.chip.onb{opacity:.45}
+.bps{display:flex;gap:4px;flex-wrap:wrap}
+.bp{font-size:12px;font-weight:700;min-width:24px;text-align:center;border-radius:6px;padding:1px 6px;background:var(--panel2);border:1px solid var(--line);color:var(--mute)}
+.bp.hit{background:var(--accent);border-color:var(--accent);color:#1a0c14}
+.tiers{margin:0;padding:0;list-style:none;font-size:13px;color:var(--mute);display:grid;gap:3px}
+.tiers b{color:var(--ink);display:inline-block;min-width:26px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;font-size:14px;vertical-align:top}
+th{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.scroll{overflow-x:auto}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+/* builder */
+.bgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.bgrid .wide{grid-column:1/-1}
+@media(max-width:900px){.bgrid{grid-template-columns:minmax(0,1fr)}:root{--hx:min(58px,calc((100vw - 64px)/7.6))}}
+.board{padding:10px 0 4px;width:max-content;max-width:100%;margin:0 auto}
+.hrow{display:flex;gap:3px;margin-top:calc(var(--hx)*-.2)}
+.hrow:first-child{margin-top:0}
+.hrow.off{margin-left:calc(var(--hx)*.5 + 1.5px)}
+.hex{width:var(--hx);height:calc(var(--hx)*1.14);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:var(--panel2);border:0;padding:0;position:relative;display:grid;place-items:center}
+.hex.full{background:var(--k)}
+.hex.full::before{content:"";position:absolute;inset:3px;clip-path:inherit;background:#191a28}
+.hex.sel{background:#fff}
+.hex span{position:relative;font-size:calc(var(--hx)*.17);font-weight:700;line-height:1.05;text-align:center;padding:0 3px;overflow-wrap:anywhere}
+.hex i{position:relative;display:block;font-style:normal;font-size:calc(var(--hx)*.16);color:var(--c5);letter-spacing:-1px}
+.hex em{position:relative;display:block;font-style:normal;font-size:9px;color:var(--accent2)}
+.rowlab{font-size:11px;color:var(--mute);text-align:center;margin:6px 0 0}
+.stat{font-size:13px;color:var(--mute)}
+.stat b{color:var(--ink)}
+.stat.over b{color:var(--bad)}
+.tr{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:7px 0;border-bottom:1px solid var(--line)}
+.tr:last-child{border-bottom:0}
+.tr .tn{font-weight:700}
+.tr .tc{font-weight:700;font-variant-numeric:tabular-nums}
+.tr.off{opacity:.6}
+.rk{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:var(--line);transform:rotate(45deg)}
+.rk.bronze{background:#b0744a}.rk.silver{background:#b9c2d3}.rk.gold{background:var(--c5)}.rk.unique{background:var(--accent2)}
+.rk.prism{background:linear-gradient(135deg,var(--accent),var(--c5),var(--accent2))}
+.editor{background:var(--panel2);border-radius:10px;padding:10px;margin-top:10px;display:grid;gap:8px}
+.editor select{width:100%}
+.idea{border-bottom:1px solid var(--line);padding:9px 0;display:grid;gap:5px}
+.idea:last-child{border-bottom:0}
+.idea p{margin:0;font-size:13.5px;color:var(--mute)}
+.comp{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:8px;background:var(--panel2)}
+.comps{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+/* tier list */
+.trow{display:grid;grid-template-columns:54px 1fr;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden;background:var(--panel)}
+.tlab{display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:18px;border:0;color:#16161f}
+.tS{background:#ff7a7a}.tA{background:#ffb066}.tB{background:#ffe066}.tC{background:#9be37a}.tD{background:#7ac4ff}.tU{background:#4a4d66;color:var(--ink);font-size:11px}
+.tbody{padding:8px;min-height:46px}
+.rec td.e{color:var(--mute)}
+.rec th:first-child,.rec td:first-child{position:sticky;left:0;background:var(--panel);font-weight:700}
+footer{max-width:1280px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin">
+  <div class="brand"><b>Prismatic Tour</b> Lab</div>
+  <nav id="nav"></nav>
+  <button class="btn sm" data-act="export">Export data</button><button class="btn sm" data-act="import">Import data</button><input type="file" id="imp" accept="application/json,.json" hidden>
+</div></header>
+<main id="app"></main>
+<footer>Personal test notebook for TFT Set 19 (Prismatic Tour). Your comps and tier list are saved in this browser; use Export and Import to move them between phone and laptop. Champion art loads from Riot's public asset CDNs. Champion, trait and unlock data read from the Set 19 reveal page on <a href="https://tftacademy.com/learn/new-set">TFT Academy</a> on 15 Nov 2026, the day of Riot's <a href="https://www.youtube.com/watch?v=ehNDT_IYjSQ">Dev Drop</a>. Not affiliated with or endorsed by Riot Games or TFT Academy.</footer>
+
+<script>
+"use strict";
+/* ---------- DATA ---------- */
+const RAW=`Elise~1~Ionic Spark,Frontman~Cocoon~60/120~Turns into a spider for bonus Health, then stuns and damages the enemy that hurt her most. Later casts heal first.~
+Gnar~1~Pentakill,Trickshot~Hard Rock~0/3~No cast. Every 3rd attack is a rock that hits harder and speeds him up.~
+Katarina~1~Classical,Slayer~Blade Sonata~0/40~Spins for magic damage around her, then bursts her target. Captivates everyone hit.~
+Kayn~1~Heartsteel,Slayer~Shadow of the Night~0/30~Dashes through a 2-hex line. Heartsteel upgrade: becomes Shadow Assassin at low Health for bonus magic damage.~
+Kennen~1~True Damage,Bodyguard~Electric Shock~0/0~No cast. Takes reduced damage and zaps adjacent enemies every second.~
+Kobuko~1~Hyperpop,Frontman~Pump It Up!~40/90~Heals over time. Your strongest Kobuko gains Health from Hyperpop Hype.~X-star Ziggs holding X item
+Lillia~1~K|DA,Bodyguard~We Love You K|DA~40/100~Heals, hits nearby enemies and weakens the damage they deal.~
+Neeko~1~K|DA,Encore,Prodigy~K|DA Fan Club~0/40~Confetti streams at the target. Each kill permanently adds Ability Power.~
+Olaf~1~Pentakill,Rock,Juggernaut~Ragnarok 'n' Roll~0/0~Heals on attack. On death, revives at full Health with Attack Speed, then bleeds out.~
+Sett~1~Heartsteel,Frontman,Collab~Live My Life~30/90~Heals and punches twice; gets extra value from max Health. Heartsteel upgrade adds periodic healing.~
+Taric~1~Beach Pop,Juggernaut~Good Reverberations~30/90~Shields himself and one damaged ally nearby.~
+Varus~1~Rock,Encore~One Thousand Arrows~30/70~Arrow hail on the target and neighbours that slows their Attack Speed.~
+Yunara~1~Ionic Spark,Swiftstriker~Cultivation of Teen Spirit~40/80~After casting, every attack fires a bonus physical orb for the rest of combat.~
+Ziggs~1~Hyperpop,Arcanist,Swiftstriker~GlitterBOM3S~0/50~Attacks deal bonus magic damage. Bomb splashes the target and neighbours.~
+Zoe~1~Beach Pop,Arcanist~Paddle Ball~15/90~Long skillshot at the farthest enemy. Ricochets with leftover damage on a kill.~
+Annie~2~Ionic Spark,Arcanist,Juggernaut~We DID Start the Fire~20/80~Shields herself and burns a cone, applying Burn and Wound for 4 seconds.~
+Ashe~2~Beach Pop,Swiftstriker~Feelin' Shot Shot Shot~20/60~Her next attacks become fast arrow flurries.~A Beach Pop champion holding X items
+Camille~2~Rock,Slayer~Hookshot Through the Heart~0/40~Cone kick. Hookshots to a new target whenever her target dies.~
+Ezreal~2~Heartsteel,Encore~Bite the Bullet~0/35~Marks then detonates for 1-hex splash. Heartsteel upgrade: bigger blast, every 3rd cast hits 2 hexes.~
+Gragas~2~K|DA,Juggernaut,Collab~Fan Clubbing~30/80~Regenerates and adds magic damage to attacks. Stronger for each 3-star K|DA ally.~
+Illaoi~2~Illbeats,Frontman~Smash-Hit Royalties~30/90~Heals and slams a line. Casts build Fame (more with banked gold); at the threshold she goes Platinum and drops gold on cast.~
+Jax~2~EDM,Bodyguard,Swiftstriker~Instant Crush~0/30~Bash that heals him and stacks Attack Speed all fight. EDM upgrade: beams through nearby enemies.~
+Karthus~2~Pentakill,Arcanist,Collab~Requiem~10/50~Delayed single-target nuke that recasts at reduced power if it kills.~
+Lucian~2~Jazz,Hitmaker,Encore~Relentless Pursuit~0/20~Dashes and fires 2 shots.~
+Lulu~2~Hyperpop,Choreographer~Hype Girl~0/50~Alternates an Attack Speed buff with a Health buff that damages around the ally.~Hyperpop champions cast X times with the trait active
+Lux~2~Ionic Spark,Prodigy~Lux Lux Beam!~0/40~Split beam on two enemies. Refunds Mana per kill.~
+Nasus~2~Classical,Bodyguard~Patron of the Arts~25/75~Zone that heals him and allies, damages enemies and Captivates those with less max Health.~A Classical champion holding X items
+Qiyana~2~True Damage,Renegade~Shuffled Playlist~0/40~Line dash. Her rotating ring adds damage, healing, mana refund or gold.~
+Renata Glasc~2~Classical,Choreographer~Hostile Measures~0/45~Stacking poison that spreads to unpoisoned enemies and Captivates.~X items on a Classical or Choreographer champion
+Renekton~2~Beach Pop,Frontman~Crocodile Rock~60/110~Grows (max Health for the fight) and spins on adjacent enemies.~
+Samira~2~Classical,Renegade,Trickshot~Bullets N' Roses~0/60~Bullet volley. Her critical strikes Captivate.~X items on a Classical, Renegade or Trickshot champion
+Seraphine~2~Indie~Livestream of Note~0/50~Channelled magic notes. Upgrades to Rising Star, then Superstar, as you 3-star champions.~Reroll X times before the Stage 2 carousel
+Tristana~2~Hyperpop,Hitmaker~Head Banger~0/55~Bombs nearby enemies and detonates them.~Get X kills with Hyperpop active
+Amumu~3~Emo~So Sad and Lorn~60/120~Heals and stuns the nearest enemies with bandages.~
+Bard~3~Jazz,Swiftstriker~Come Chime with Me~20/80~Casts generate XP through his Horn. Meep wave pierces enemies.~
+Braum~3~Illbeats,Juggernaut~Percussive Slam~75/135~Shield, then an area stun around him.~
+Briar~3~Ionic Spark,Slayer,Collab~Snack Attack~0/30~Heals, dives the farthest enemy in range, then frenzies with empowered attacks.~
+Draven~3~Illbeats,Trickshot~You Spin Me Round (Like An Axe)~0/60~Spinning record plus a lingering damage vortex.~
+Ekko~3~True Damage,Juggernaut,Prodigy~Turn Back Time~30/120~Delays part of the damage he takes. Cast erases it, heals and hits the target.~
+Evelynn~3~K|DA,Renegade~Villainous~0/40~Opens behind her target and is untargetable for a while. Semicircle burst that ignores some Magic Resist.~Field X K|DA or Renegade champions
+Galio~3~Jazz,Frontman~Blow Up a Storm~50/120~Shield, then stuns the enemy that hurt him most.~Have X of Bodyguard, Juggernaut or Frontman active
+K'Sante~3~Heartsteel,Bodyguard~In Your House!~70/140~Shield, charge-stun, slam and taunt. Heartsteel upgrade adds resists and on-hit damage.~
+Kai'Sa~3~K|DA,Trickshot~Make it Rain~0/30~Missiles every few attacks. Cast grants Attack Speed for the fight.~
+Malzahar~3~Composer,Prodigy~Forbidden Cacophony~0/50~Beam plus 4 explosions that shred Magic Resist. He is the key to unlocking Baron.~
+Senna~3~True Damage,Hitmaker~Reverberation Devastation~0/20~Marks a target, then detonates the mark for stacking Damage Amp.~
+Swain~3~Rock,Arcanist,Frontman~A Cruel Devil's Thesis~70/120~Demon form: max Health and a damage aura. Recasts heal and ramp.~
+Syndra~3~Beach Pop,Choreographer~Serve's Up~0/30~Volleyball spike that bounces to the least-itemised enemy behind.~X unique star levels of Beach Pop or Choreographer
+Tibbers~3~Ionic Spark,Bodyguard~Girl's Best Friend~40/100~Enrages at low Health or when Annie dies. Cast shields him.~X-star Annie holding X item
+Viego~3~Pentakill,Choreographer,Slayer~Singled Out~0/40~Swords impale the target. Gains a permanent sword per set of takedowns.~
+Ahri~4~K|DA,Choreographer~Burn it Down~0/30~Stacks fox-fires, then launches them all. Her flow state adds a heart and splash.~
+Alistar~4~Country~Blue Cow Crying in the Rain~55/155~Big missing-Health heal, then an area knock-up.~A Chain Vest equipped on a Caster or Marksman
+Alune~4~Heartsteel,Manager,Prodigy~Spotlight~20/65~Spotlight nuke that splits and overflows on kill. Heartsteel upgrade adds extra blasts.~X unique Heartsteel or Prodigy champions
+Aurora~4~Ionic Spark,Renegade~Between Worlds Apart~0/60~Blinks out, pierces the best line (most damage to the two tankiest), blinks back.~
+Garen~4~Synthwave,Choreographer~Sword of Truth~30/100~Heals, then a wave that damages and weakens.~
+Graves~4~Beach Pop,Renegade~Left Hand Free~0/30~Dashing cone-shot attacks. Kills extend the spree.~
+Jhin~4~Classical,Encore~String Quartet~4/4~Attack Speed converts to AD. Every 4th shot is empowered; later he gains infinite range and pierce. Captivates.~
+Jinx~4~Ionic Spark,Hitmaker~Boom Boom POW POW~30/90~Rapid missile barrage on nearby enemies.~X items on an Ionic Spark or Hitmaker champion
+Kayle~4~Pentakill,Swiftstriker~Stairway to Hell~0/50~Bonus magic on-hit. Cast gives infinite range and Attack Speed, ending in a sword rain.~X unique Pentakill or Swiftstriker champions
+Leona~4~K|DA,Bodyguard,Manager~Coordinated Light Show~40/100~Shield plus light beams that shred Magic Resist.~
+Locke~4~Rock,Swiftstriker~Pursue Sin (The Soul Nail Song)~0/30~Marks ramp his damage. Throws 3 nails at the farthest enemy and teleports to it.~
+Mel~4~R&B,Arcanist~Chain of Blues~0/40~Missiles stack Blues; stacked enemies take more from the ability.~
+Shyvana~4~Ionic Spark,Frontman~Dragon Force~30/100~Transforms at a Health threshold for Health, Attack Speed and splash 3rd hits. Cast shields.~
+Thresh~4~Classical,Frontman~Dark Passage (Reprise)~40/100~Periodically Captivates the farthest enemy. Heals and drains nearby max Health.~Enemies spend X seconds Captivated by Classical
+Vayne~4~Rock,Trickshot~Darkest Hour~0/50~Tumbles with Durability. Empowered attacks deal % max Health damage.~Field Rock for X combats
+Wukong~4~Gu Feng~The Tricks of the Many Mythical Tricksters~40/100~Heals. Clones steal Armor and Magic Resist in a 2-hex ring and bring them back.~Allies deal X damage while fielding Xayah
+Xayah~4~Gu Feng,Hitmaker~Feathers Flying Like Leaves on the Wind~0/60~Feather strikes that shred Armor. Fielding her drives every Gu Feng unlock.~
+Yasuo~4~True Damage,Slayer~Last Breath~0/30~Line thrust. Every 3rd cast knocks up and slams for area damage.~X star levels of True Damage and Slayer champions
+Yone~4~Heartsteel,Slayer~Two Sides~0/50~Scales with AD or AP, whichever is higher. Multi-strike plus finisher; Heartsteel upgrade adds strikes and Armor pen.~
+Yorick~4~Pentakill,Juggernaut~Danse Macabre~50/100~Heals and lays a damage zone that ends with a slow.~
+Yuumi~4~Illbeats,Encore,Collab~Girl, Put Your Records On (Your Head)~0/20~Stacking discs shred Magic Resist, then topple for burst and splash.~
+Zac~4~Beach Pop,Juggernaut~Cannonball!~60/120~Charges with Durability and healing, then leaps for an area knock-up.~X unique Beach Pop or Juggernaut champions
+Akali (True Damage)~5~True Damage,Freestyle~Killin' like Domino~0/50~Untargetable slash combo (extra vs tanks) and a bomb. B-Side: takedowns restore player Health.~Earn X True Damage Bling without K|DA Akali unlocked
+Akali (K|DA)~5~K|DA~Sk8er Gurl~0/45~Skates a line, painting enemies Vulnerable. Every 3rd cast ignites the paint.~X unique star levels of K|DA without True Damage Akali unlocked
+Aphelios~5~Heartsteel~BANG BANG BANGERS~40/180~Stacks Chakrams for on-hit damage, then AD and infinite range. Splitting bolts on cast.~X-star Alune or Yone
+Dr. Mundo~5~Record Mogul,Manager~Big Business~20/80~Pumped Up above a Health threshold. Heals and pulses area damage.~
+Gwen~5~Ionic Spark,Melodic Heart~Glimmer in the Night~0/100~Cone on-hit attacks and dashes between targets. Giant scissors snip a full row.~Ionic Spark fans cheer X times
+Janna~5~Gu Feng,Windblessed,Prodigy~Hymn of the Heaven's Gale~0/45~Dragons at nearby enemies. After several casts, a board-wide gale.~Earn X interest while fielding Xayah
+Lee Sin~5~Gu Feng~Celestial Combo To Impress The Heavens~0/50~Combo grows each cast: slam, knock-up spin, then a true-damage punch on marked targets.~Deal X player damage while fielding Xayah
+Miss Fortune~5~8-Bit,Hitmaker~Pinball Wizard~0/50~Bouncing pinball with a damage floor.~
+Mordekaiser~5~Pentakill~Hand of Doom~0/60~Giant claw line that pulls. Then Omnivamp, range and area slams for the fight.~X unique star levels of Pentakill
+Nidalee~5~Mariachi,Choreographer~Pounce Party | Dance of Life~20/45~Cougar form chains ramping pounces. Human form heals and throws a javelin with flower splash.~
+Nunu & Willump~5~Disco,Frontman~It's the Time to Disco!~20/75~Rolls a growing Disco Ball through enemies. Casts speed it up.~
+Pyke~5~Rock,Renegade~Execute Gon' Give it to Ya~0/30~X-shaped strike that executes. Auto-casts on any enemy below the threshold.~Have X or more gold at the end of combat
+Rell~5~R&B,Beat Master~Rhythm Blaster | Metal Pony Club~30/100~Unmounted: shield and 3 damaging speakers. Mounted: crowd slam.~
+Taliyah~5~Beach Pop,Encore~Crowd Surfing~0/40~Rock volleys. Every few casts she surfs a line for % max Health damage and a knock-up.~A champion of each cost starts in a Beach Pop hex
+Teemo~5~Hyperpop,Hype Man~Going Viral~0/100~Viral damage-over-time spreads through exploding zombies. Mushroom infects a 3-hex area.~Collect X Hyperpop Hype
+Twisted Fate~5~Tango,Trickshot~Wildcard Cortado~0/50~Shop-based loot on rounds you reroll. 5 card attacks that each hit 3 enemies.~
+Vi~5~EDM,Juggernaut~Drop the Beatdown~0/50~Shields herself and allies, then repeated area slams. EDM upgrade: extra slam and healing.~
+Vladimir~5~Classical,Arcanist~The Opera Phantom~0/40~Omnivamp. Captivates debuffed enemies; drops a chandelier on everyone every few casts.~Only X champion in the two front rows
+Zeri~5~Goth,Swiftstriker~Lasers After Midnight~0/150~Dashes around firing Armor-piercing lasers.~
+Baron Nashor~7~One Monster Band~Assemble the Ensemble~80/120~Summons an 8-piece orchestra and a Riff Herald: board-wide knock-up and split damage. Takes 2 team slots.~Collect all X Composer instruments and deal X damage with your strongest Malzahar
+Rakan~7~Boy Band,Choreographer~Fly like a Peacock~0/55~Dashes into a group; feathers split damage and knock up within 2 hexes. Comes with clones.~Win X combats in a row at level 8+, or lose X in a row at level 8+
+Smeech~7~Jazz,Slayer~Upswing~0/4~Builds Beats. Shield, area hit and multi-strike; enough Beats grants an emblem for an inactive trait.~Have X or more non-unique traits active
+Sona~7~Producer,Collab~feat. Sona~0/190~Cannot attack. Pulses damage and shields, then a board-wide stun wave. Gains a band trait you pick.~Collab champions are inspired X times`;
+const CHAMPS=RAW.split("\n").map(l=>{const [n,c,t,a,m,d,u]=l.split("~");return{n,c:+c,t:t.split(","),a,m,d,u:u||""}});
+const CH=Object.fromEntries(CHAMPS.map(c=>[c.n,c]));
+const COSTS=[1,2,3,4,5,7];
+
+// k: band | class | solo.  bp: breakpoints.  tiers: what each breakpoint adds (X = value not published yet)
+const TRAITS=[
+["Beach Pop","band",[3,5,7],"Gain placeable instruments that empower adjacent allies with Health regen. Empowered Beach Pop champions also gain Attack Speed and Mana regen.",["1 instrument","2 instruments","Plus a periodic ocean breeze that heals and buffs Beach Pop champions"]],
+["Classical","band",[2,4,6],"Each member Captivates enemies in its own way. Classical champions gain Damage Amp that grows with total time enemies spend Captivated.",["Captivated enemies deal less damage","Captivated enemies drop roses on death that heal a Classical champion","Captivated enemies can join your bench on death"]],
+["EDM","band",[2],"Jax and Vi get upgraded abilities.",["Both EDM abilities are upgraded"]],
+["Gu Feng","band",[2,3,4],"Gu Feng champions gain stats that scale with your player level.",["Stats per level","More stats per level","Choose one of two Scrolls for a Gu Feng champion; one opens a risky path to Level 11"]],
+["Heartsteel","band",[1,3,5,7],"Every member grants a team bonus. Higher tiers let you pick Biases that upgrade members' abilities (the \"Heartsteel upgrade\" lines on their cards).",["Team bonuses from each member","Choose a Bias","Choose a 2nd Bias","Heartsteel champions gain an extra share of all active bonuses. A prismatic version exists"]],
+["Hyperpop","band",[2,3,4,5],"Health and Attack Speed. After each player combat they generate Hype by star level (4 / 6 / 12 / 40) plus 1 per takedown. Each new Hype Level pays a reward.",["Stats","Stats, more Hype","Stats, more Hype","Stats, most Hype"]],
+["Illbeats","band",[2,3,4],"Open the Illbeats Mixer and allocate Decibels between Health, Attack Damage, Ability Power and gold chance on takedown. Your team gets a share of the mix.",["X Decibels","More Decibels","More Decibels and a stronger mix"]],
+["Jazz","band",[2,3,4],"Your team gains Health and Damage Amp for every active non-unique trait. Rewards wide boards.",["Per-trait bonus","Larger bonus","Largest bonus"]],
+["K|DA","band",[3,5,7,10,13,15],"Counts TOTAL STAR LEVELS of your K|DA champions, not units. Each tier releases a song that powers them at combat start and again later.",["POP/STARS: 10% reduced max Mana","DRUM GO DUM: shield","VILLAIN: 60% decaying buff","I'LL SHOW YOU: all previous effects +33%","WATCH ME: stun all enemies 1.25s","FIRESTARTER: enemies take 16% max Health magic damage over 8s"],true],
+["Pentakill","band",[3,5,7,10],"Attack Damage and Ability Power. The first few enemies to drop below a Health threshold are executed and replaced by an allied ghoul.",["Stats, X executes","More stats and executes","More; first enemy to die summons the Iron Maiden","MOSH PIT"]],
+["R&B","band",[1,2],"Your team takes less damage from abilities. With both, Mel and Rell are soul-linked: Rell absorbs part of Mel's damage and heals from Mel's damage dealt.",["Ability damage reduction","Mel and Rell soul-link"]],
+["Rock","band",[3,4,5,7],"Summons the Infernal Idol, which scales with the star level of your Rock champions.",["Summon the Idol","Idol heals from Rock champions' damage","Idol fires a massive blast through the most enemies on cast","Periodic bolts repeat a share of Rock damage as magic damage"]],
+["True Damage","band",[3,5],"A-Side: earn Bling for winning. B-Side: earn Bling for losing. Every X rounds, cash Bling out for rewards or Keep Rising.",["Bonus true damage; Bling on kill and on streak result","30% true damage; more Bling"]],
+["Ionic Spark","band",[3,5,7,10],"Fans send gifts every X seconds. Members gain Health.",["Letters that heal and buff","Personalised gifts","Gold and a consumable every X player combats","Fans rush the stage"]],
+["Arcanist","class",[2,4,6],"Team Ability Power; Arcanists gain more.",["","",""]],
+["Bodyguard","class",[2,4,6],"While a Bodyguard is alive, team Armor and Magic Resist; Bodyguards gain more.",["","",""]],
+["Choreographer","class",[2,3,4,5],"Allies starting in the front 2 rows gain a Shield, everyone else Damage Amp. Choreographers get double.",["","","",""]],
+["Collab","class",[3,5],"Collab champions become inspired after enough hits dealt or taken, gaining AD and AP. Inspirations also pay out copies of Collab champions. A different set of champions has Collab each game, so the members listed here are only this reveal's examples.",["Inspired stats","More stats"]],
+["Encore","class",[2,4],"Ability projectiles fire one extra time at reduced effectiveness.",["X effectiveness","Higher effectiveness"]],
+["Frontman","class",[2,4,6],"Team Health; Frontmen gain more, and more again after their first cast.",["","",""]],
+["Hitmaker","class",[2,4],"Attack Damage. The Hitmakers with the most items become Big Shots with even more.",["1 Big Shot","More Big Shots"]],
+["Juggernaut","class",[2,4,6],"Durability that grows with missing Health.",["","",""]],
+["Manager","class",[2,3,4],"Gain a Spotlight Hex. The ally in it gets bonuses at combat start and periodically.",["Bonus","Plus Mana","Plus they drop gold"]],
+["Prodigy","class",[2,3,4,5],"Team Mana Regen; Prodigies gain more.",["","","","Lowest-Health ally heals from Prodigy ability damage"]],
+["Renegade","class",[2,3,4,5],"Precision (abilities can crit), Critical Strike Chance and Damage.",["","","","Renegades also gain Durability"]],
+["Slayer","class",[2,4,6],"Attack Speed and Omnivamp that grows with missing Health.",["","",""]],
+["Swiftstriker","class",[2,3,4,5],"Team Attack Speed; Swiftstrikers gain stacking Attack Speed over time.",["","","",""]],
+["Trickshot","class",[2,3,4],"Attacks and abilities ricochet, each bounce dealing a share of the previous.",["X ricochets","More","Most"]],
+["8-Bit","solo",[1],"Miss Fortune. Tracks your team's damage as a score (hers counts triple). Beat a high score, get a prize.",[]],
+["Beat Master","solo",[1],"Rell. At max Health she mounts up and fully heals; mounted, her Mana cost drops and every 3rd attack hits a line.",[]],
+["Boy Band","solo",[1],"Rakan. Comes with placeable clones that copy his completed and Radiant items.",[]],
+["Composer","solo",[1],"Malzahar. Mystical Instruments appear in your shop, one per rarity; each gives team AP (double for him). All 5 plus enough Malzahar damage unlocks Baron Nashor.",[]],
+["Country","solo",[1],"Alistar. Gains Durability at combat start if he has enough bonus Health.",[]],
+["Disco","solo",[1],"Nunu & Willump. Team heals each second; after enough casts, Disco Fever grants team Attack Speed.",[]],
+["Emo","solo",[1],"Amumu. Gains Armor and Magic Resist if he starts with no adjacent allies.",[]],
+["Freestyle","solo",[1],"Akali (True Damage). A-Side prints gold, B-Side restores player Health.",[]],
+["Goth","solo",[1],"Zeri. The first enemy she damages each combat has Attack Damage stolen for her.",[]],
+["Hype Man","solo",[1],"Teemo. Hyperpop champions dealing or taking damage store extra Hype.",[]],
+["Indie","solo",[1],"Seraphine. Grants a random champion after combat; 3-starring champions upgrades her to Rising Star and then Superstar.",[]],
+["Mariachi","solo",[1],"Nidalee. Casts in Cougar Form when healthy, Human Form otherwise.",[]],
+["Melodic Heart","solo",[1],"Gwen. Opens combat in Mist: untargetable by attacks, allies inside gain Durability.",[]],
+["One Monster Band","solo",[1],"Baron Nashor. Takes 2 team slots, is unstoppable, and after his first cast steals AD, AP, Attack Speed and crit from all enemies.",[]],
+["Producer","solo",[1],"Sona. Choose a band to feature and gain its trait (add it with an emblem in the builder). Converts her AD and Attack Speed to AP.",[]],
+["Record Mogul","solo",[1],"Dr. Mundo. Hands out Record Contracts: contracted champions gain Damage Amp and their kills give him permanent Health.",[]],
+["Synthwave","solo",[1],"Garen. At a Health threshold, gains a shield based on healing and shielding received.",[]],
+["Tango","solo",[1],"Twisted Fate. The nearest ally becomes his Tango Partner: Attack Speed, and their damage Burns and Wounds.",[]],
+["Windblessed","solo",[1],"Janna. Opens combat with a tornado that knocks up enemies in its path.",[]]
+].map(([n,k,bp,d,tiers,stars])=>({n,k,bp,d,tiers,stars:!!stars}));
+const TR=Object.fromEntries(TRAITS.map(t=>[t.n,t]));
+TRAITS.forEach(t=>t.m=CHAMPS.filter(c=>c.t.includes(t.n)));
+
+const COMPONENTS=["B.F. Sword","Recurve Bow","Needlessly Large Rod","Tear of the Goddess","Chain Vest","Negatron Cloak","Giant's Belt","Sparring Gloves"];
+const RECIPES=[
+["Deathblade","Giant Slayer","Hextech Gunblade","Spear of Shojin","Edge of Night","Bloodthirster","Sterak's Gage","Infinity Edge"],
+[0,"Red Buff","Guinsoo's Rageblade","Void Staff","Titan's Resolve","Kraken's Fury","Nashor's Tooth","Last Whisper"],
+[0,0,"Rabadon's Deathcap","Archangel's Staff","Crownguard","Ionic Spark","Morellonomicon","Jeweled Gauntlet"],
+[0,0,0,"Blue Buff","Protector's Vow","Adaptive Helm","Spirit Visage","Hand of Justice"],
+[0,0,0,0,"Bramble Vest","Gargoyle Stoneplate","Sunfire Cape","Steadfast Heart"],
+[0,0,0,0,0,"Dragon's Claw","Evenshroud","Quicksilver"],
+[0,0,0,0,0,0,"Warmog's Armor","Striker's Flail"],
+[0,0,0,0,0,0,0,"Thief's Gloves"]];
+const recipe=(i,j)=>i<=j?RECIPES[i][j]:RECIPES[j][i];
+const ITEMS=[...new Set(RECIPES.flat().filter(Boolean))].sort();
+const EMBLEMS=TRAITS.filter(t=>t.k!=="solo").map(t=>"Emblem: "+t.n);
+
+// Untested ideas built from trait overlap. Each is a question to answer in a real game.
+const IDEAS=[
+["Ionic Spark 7","Seven members are in the shop without any quest, so this is the cleanest big vertical to test first. Watch what the 7-piece gold-and-consumable payout is worth, and how early Tibbers, Jinx and Gwen unlock.",["Elise","Yunara","Annie","Lux","Briar","Aurora","Shyvana"]],
+["K|DA star stacking","Breakpoints count total star levels. Three 3-star cheap units are already 9 stars. Test whether rerolling Lillia, Neeko and Gragas beats playing 2-star 4-costs, and how fast you reach 10.",["Lillia","Neeko","Gragas","Kai'Sa","Ahri","Leona","Evelynn"]],
+["Hyperpop from one Ziggs","Ziggs is the only member in the opening shop; the other four are quests. Time each unlock and log Hype Level rewards.",["Ziggs","Kobuko","Lulu","Tristana","Teemo"]],
+["Heartsteel 7 with Aphelios","Compare Bias choices at 3 and 5. Aphelios needs a starred-up Alune or Yone, so note when that lands.",["Kayn","Sett","Ezreal","K'Sante","Yone","Alune","Aphelios"]],
+["Pentakill 7","Exactly 7 members. Kayle and Mordekaiser are quests that this board completes by itself. Check the execute threshold and ghoul value.",["Gnar","Olaf","Karthus","Viego","Yorick","Kayle","Mordekaiser"]],
+["Rock 7 and the Idol","Exactly 7 members and the Idol scales with their stars. Compare 5 Rock plus a second trait against the full 7.",["Olaf","Varus","Camille","Swain","Locke","Vayne","Pyke"]],
+["Classical Captivate","Only Katarina and Jhin are in the shop; four members need items on Classical units. Test how many items the quests want and whether 6 really adds bench units.",["Katarina","Nasus","Renata Glasc","Samira","Jhin","Thresh","Vladimir"]],
+["True Damage: A-Side vs B-Side","Run the same five twice, once committing to wins and once to losses. Log Bling per round and which Akali you end up with.",["Kennen","Qiyana","Ekko","Senna","Yasuo","Akali (True Damage)"]],
+["Gu Feng through Xayah","All three other members unlock while Xayah is fielded. Test the Scroll choice at 4 and the Level 11 path.",["Xayah","Wukong","Janna","Lee Sin","Leona","K'Sante","Braum","Thresh"]],
+["Jazz wide board","Jazz pays per active trait. This shell turns on six traits with eight units; count how many you can hold at level 8 and 9, and whether it unlocks Smeech.",["Lucian","Bard","Galio","Senna","Varus","Jax","Kennen","Elise"]],
+["Beach Pop instruments","Test instrument placement and the Taliyah quest (one champion of each cost in a Beach Pop hex).",["Taric","Zoe","Renekton","Graves","Zac","Ashe","Syndra"]],
+["Slayer 6","Six Slayers across five bands. Good check on how strong a pure class vertical is in this set.",["Katarina","Kayn","Camille","Briar","Viego","Yone"]],
+["Baron via Malzahar","Prodigy shell to keep Malzahar casting while you collect the 5 instruments. Log how many rounds the instruments take to appear.",["Malzahar","Neeko","Lux","Ekko","Alune","Janna","Leona","Swain"]]
+];
+
+/* ---------- STATE + SYNC ---------- */
+const LS="ptlab-v1";
+let state={upd:0,comps:[],tiers:{champs:{},traits:{}},board:{id:null,name:"",level:8,units:[]}};
+function norm(s){s=s||{};return{upd:+s.upd||0,comps:Array.isArray(s.comps)?s.comps:[],tiers:{champs:(s.tiers&&s.tiers.champs)||{},traits:(s.tiers&&s.tiers.traits)||{}},board:Object.assign({id:null,name:"",level:8,units:[]},s.board||{})}}
+try{const s=localStorage.getItem(LS);if(s)state=norm(JSON.parse(s))}catch(e){}
+function save(){state.upd=Date.now();try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
+
+/* ---------- IMAGES: Riot art, tried in order; falls back to initials ---------- */
+const CDK={"Nunu & Willump":"nunu","Dr. Mundo":"drmundo","Baron Nashor":"baron"};
+const DDK={"Kai'Sa":"Kaisa","K'Sante":"KSante","Dr. Mundo":"DrMundo","Miss Fortune":"MissFortune","Lee Sin":"LeeSin","Twisted Fate":"TwistedFate","Nunu & Willump":"Nunu","Renata Glasc":"Renata","Wukong":"MonkeyKing","Tibbers":"","Kobuko":"","Baron Nashor":"","Smeech":"","Alune":""};
+let DDV=null,CDB=null;const RES={};
+const cdUrl=(b,k)=>"https://raw.communitydragon.org/"+b+"/game/assets/characters/tft19_"+k+"/hud/tft19_"+k+"_square.tft_set19.png";
+const resetImgs=()=>{Object.keys(RES).forEach(k=>delete RES[k]);render()};
+// Set 19 tiles only exist on Riot's asset mirror once the set is on PBE; probe once and switch over when they do.
+["latest","pbe"].forEach(b=>{const p=new Image();p.onload=()=>{CDB=b;resetImgs()};p.src=cdUrl(b,"elise")});
+function cands(n){const base=n.replace(/ \(.*/,"");const k=CDK[base]||base.toLowerCase().replace(/[^a-z]/g,"");const out=[];
+  if(CDB)out.push(cdUrl(CDB,k));
+  const d=base in DDK?DDK[base]:base.replace(/[^A-Za-z]/g,"");if(DDV&&d)out.push("https://ddragon.leagueoflegends.com/cdn/"+DDV+"/img/champion/"+d+".png");return out}
+function im(n){const r=RES[n];if(r==="")return "";const src=r||cands(n)[0];return src?`<img alt="" loading="lazy" src="${src}" data-n="${esc(n)}" data-i="${r?-1:0}" onerror="IE(this)" onload="IL(this)">`:""}
+function IE(el){const n=el.dataset.n,cs=cands(n),i=+el.dataset.i+1;if(i<cs.length){el.dataset.i=i;el.src=cs[i]}else{RES[n]="";el.remove()}}
+function IL(el){RES[el.dataset.n]=el.src}
+const ini=n=>n.replace(/ \(.*/,"").split(/[^A-Za-z]+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase();
+const av=(c,s)=>`<span class="av k${c.c}" style="--s:${s}px">${ini(c.n)}${im(c.n)}</span>`;
+fetch("https://ddragon.leagueoflegends.com/api/versions.json").then(r=>r.json()).then(v=>{DDV=v[0];resetImgs()}).catch(()=>{});
+
+/* ---------- HELPERS ---------- */
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const app=document.getElementById("app");
+const VIEWS=[["champions","Champions"],["traits","Traits"],["unlocks","Unlocks"],["builder","Team builder"],["tier-list","Tier list"],["early-game","Early game & gold"],["items","Items"]];
+let view="champions";
+const ui={q:"",cost:0,trait:"",compact:false,pq:"",pcost:0,ptrait:"",sel:-1,tmode:"comps",tsel:null,strat:"standard",del:null};
+const slots=u=>u.reduce((a,x)=>a+(x.n==="Baron Nashor"?2:1),0);
+function calcTraits(units){
+  const by={};
+  for(const u of units){const ch=CH[u.n];if(!ch)continue;const ts=new Set(ch.t);
+    (u.it||[]).forEach(i=>{if(i&&i.startsWith("Emblem: ")&&TR[i.slice(8)])ts.add(i.slice(8))});
+    ts.forEach(t=>{by[t]=by[t]||{};by[t][u.n]=Math.max(by[t][u.n]||0,u.s||1)})}
+  return Object.entries(by).map(([t,m])=>{const def=TR[t],vals=Object.values(m);const count=def.stars?vals.reduce((a,b)=>a+b,0):vals.length;let idx=-1;def.bp.forEach((b,i)=>{if(count>=b)idx=i});
+    const rk=idx<0?"":def.bp.length===1?"unique":(idx===def.bp.length-1&&def.bp.length>=4)?"prism":["bronze","silver","gold","gold","gold"][idx];
+    return{t,count,idx,def,rk}}).sort((a,b)=>(b.idx>=0)-(a.idx>=0)||(a.def.k==="solo")-(b.def.k==="solo")||b.idx-a.idx||b.count-a.count||a.t.localeCompare(b.t));
+}
+const chip=(c,act,cls)=>`<button class="chip k${c.c} ${c.u?"lock":""} ${cls||""}" data-act="${act}" data-n="${esc(c.n)}" title="${esc(c.t.join(" · "))}">${av(c,22)}${esc(c.n)}</button>`;
+const bps=(def,count)=>`<span class="bps">${def.bp.map(b=>`<span class="bp ${count>=b?"hit":""}">${b}</span>`).join("")}</span>`;
+
+/* ---------- VIEWS ---------- */
+function champCard(c){return `<article class="card k${c.c}"><div class="row" style="flex-wrap:nowrap;align-items:flex-start">${av(c,56)}<div style="flex:1;min-width:0;display:grid;gap:6px"><div class="hd"><span class="nm">${esc(c.n)}</span><span class="cost">${c.c} cost${c.u?" · unlock":""}</span></div>
+<div class="pills">${c.t.map(t=>`<span class="pill ${TR[t].k==="class"?"":"band"}">${esc(t)}</span>`).join("")}</div></div></div>
+<div class="ab"><b>${esc(c.a)}</b> · mana ${esc(c.m)}<br>${esc(c.d)}</div>${c.u?`<div class="unlock">${esc(c.u)}</div>`:""}
+<div><button class="btn sm" data-act="add-go" data-n="${esc(c.n)}">Add to builder</button></div></article>`}
+function champList(onlyUnlock){
+  const q=ui.q.toLowerCase();
+  const list=CHAMPS.filter(c=>(!onlyUnlock||c.u)&&(!ui.cost||c.c===ui.cost)&&(!ui.trait||c.t.includes(ui.trait))&&(!q||(c.n+" "+c.t.join(" ")+" "+c.a).toLowerCase().includes(q)));
+  return COSTS.map(k=>{const g=list.filter(c=>c.c===k);return g.length?`<div class="costh k${k}"><span class="dot"></span>${k}-cost · ${g.length}</div><div class="cards">${g.map(champCard).join("")}</div>`:""}).join("")||`<p class="lead">No champion matches those filters.</p>`;
+}
+function filterBar(){return `<div class="row filters">
+<input type="text" id="q" placeholder="Search name, trait or ability" value="${esc(ui.q)}" aria-label="Search champions">
+${[0,...COSTS].map(k=>`<button class="btn sm ${ui.cost===k?"on":""}" data-act="cost" data-k="${k}">${k||"All"}</button>`).join("")}
+<select id="ftrait" aria-label="Filter by trait"><option value="">Any trait</option>${TRAITS.map(t=>`<option ${ui.trait===t.n?"selected":""}>${esc(t.n)}</option>`).join("")}</select>
+<button class="btn sm ${ui.compact?"on":""}" data-act="compact">Compact</button></div>`}
+function vChampions(){return `<h1>Set 19 champions</h1><p class="lead">All 94 champions from the Dev Drop: 15 one-costs, 18 two-costs, 16 three-costs, 22 four-costs, 19 five-costs and 4 seven-costs. ${CHAMPS.filter(c=>c.u).length} of them are unlocks.</p>
+<p class="note">Riot has not published numbers yet, so damage values, quest counts and most trait percentages show as X. They fill in when the set reaches PBE. Ability text here is my own short summary.</p>${filterBar()}<div id="list" class="${ui.compact?"compact":""}">${champList(false)}</div>`}
+function vUnlocks(){return `<h1>Unlockable champions</h1><p class="lead">These are not in the shop at the start. Finish the quest and the champion shows up in your next shop. Quest counts are still X until PBE.</p>${filterBar()}<div id="list" class="${ui.compact?"compact":""}">${champList(true)}</div>`}
+function traitCard(t){return `<article class="card"><div class="hd"><span class="nm">${esc(t.n)}</span><span class="cost" style="color:var(--mute)">${t.k==="band"?"Band":t.k==="class"?"Class":"Solo act"}${t.stars?" · counts stars":""}</span></div>
+${bps(t,0)}<div class="ab">${esc(t.d)}</div>
+${t.tiers.some(Boolean)?`<ul class="tiers">${t.bp.map((b,i)=>t.tiers[i]?`<li><b>${b}</b>${esc(t.tiers[i])}</li>`:"").join("")}</ul>`:""}
+<div class="chips">${t.m.map(c=>chip(c,"add-go")).join("")}</div>
+${t.k!=="solo"?`<div><button class="btn sm" data-act="vertical" data-t="${esc(t.n)}">Load vertical in builder</button></div>`:""}</article>`}
+function vTraits(){const sec=(k,h,p)=>`<div class="costh">${h}</div><p class="lead">${p}</p><div class="cards">${TRAITS.filter(t=>t.k===k).map(traitCard).join("")}</div>`;
+return `<h1>Set 19 traits</h1><p class="lead">14 bands, 14 classes and 19 one-champion solo acts. A lock marks an unlockable member. Tap a champion to drop it into the builder.</p>
+${sec("band","Bands","Origins. K|DA, Heartsteel, Pentakill and True Damage share names with Remix Rumble but work differently here.")}${sec("class","Classes","Stat and role traits. Percentages are not published yet.")}${sec("solo","Solo acts","Unique traits active with a single champion.")}`}
+
+function hexHTML(){const by={};state.board.units.forEach((u,i)=>by[u.h]=i);let h="";
+  for(let r=0;r<4;r++){h+=`<div class="hrow ${r%2?"off":""}">`;for(let c=0;c<7;c++){const x=r*7+c,i=by[x];
+    if(i===undefined)h+=`<button class="hex" data-act="hex" data-h="${x}" aria-label="Empty hex"></button>`;
+    else{const u=state.board.units[i],ch=CH[u.n];h+=`<button class="hex full k${ch.c} ${ui.sel===i?"sel":""}" data-act="hex" data-h="${x}">${im(u.n)}<span><i>${"★".repeat(u.s||1)}</i>${esc(u.n.replace(/ \(.*/,""))}${(u.it||[]).filter(Boolean).length?`<em>${"●".repeat(u.it.filter(Boolean).length)}</em>`:""}</span></button>`}}
+    h+="</div>"}return h}
+function editorHTML(){const u=state.board.units[ui.sel];if(!u)return `<p class="stat">Tap a champion below to place it. Tap a unit on the board to set stars and items, then tap another hex to move it.</p>`;
+  const ch=CH[u.n];const opt=v=>`<option value="">No item</option><optgroup label="Completed items">${ITEMS.map(i=>`<option ${v===i?"selected":""}>${esc(i)}</option>`).join("")}</optgroup><optgroup label="Emblems (+1 trait)">${EMBLEMS.map(i=>`<option ${v===i?"selected":""}>${esc(i)}</option>`).join("")}</optgroup>`;
+  return `<div class="editor"><div class="row"><b>${esc(u.n)}</b><span class="stat">${esc(ch.t.join(" · "))}</span></div>
+  <div class="row">${[1,2,3].map(s=>`<button class="btn sm ${u.s===s?"on":""}" data-act="star" data-s="${s}">${"★".repeat(s)}</button>`).join("")}<button class="btn sm danger" data-act="remove">Remove</button></div>
+  ${[0,1,2].map(k=>`<select data-item="${k}" aria-label="Item ${k+1}">${opt((u.it||[])[k]||"")}</select>`).join("")}
+  ${ch.u?`<div class="unlock">${esc(ch.u)}</div>`:""}</div>`}
+function traitsHTML(){const ts=calcTraits(state.board.units);if(!ts.length)return `<p class="stat">Traits appear here as you place champions.</p>`;
+  return ts.map(x=>{const nxt=x.def.bp.find(b=>b>x.count);return `<div class="tr ${x.idx<0?"off":""}"><span class="tn"><span class="rk ${x.rk}"></span>${esc(x.t)}</span><span class="tc">${x.count}${x.def.stars?"★":""}${nxt?` / ${nxt}`:""}</span>${bps(x.def,x.count)}<span></span>${x.idx>=0&&x.def.tiers[x.idx]?`<span class="stat" style="grid-column:1/-1">${esc(x.def.tiers[x.idx])}</span>`:""}</div>`}).join("")}
+function pickHTML(){const q=ui.pq.toLowerCase(),on=new Set(state.board.units.map(u=>u.n));
+  const list=CHAMPS.filter(c=>(!ui.pcost||c.c===ui.pcost)&&(!ui.ptrait||c.t.includes(ui.ptrait))&&(!q||(c.n+" "+c.t.join(" ")).toLowerCase().includes(q)));
+  return COSTS.map(k=>{const g=list.filter(c=>c.c===k);return g.length?`<div class="row" style="margin-bottom:8px;align-items:flex-start"><span class="cost k${k}" style="width:44px;padding-top:5px">${k}-cost</span><div class="chips" style="flex:1">${g.map(c=>`<button class="tile ${c.u?"lock":""} ${on.has(c.n)?"onb":""}" data-act="add" data-n="${esc(c.n)}" title="${esc(c.t.join(" · "))}">${av(c,54)}<span>${esc(c.n.replace(/ \(.*/,m=>m.includes("True")?" TD":" K|DA"))}</span></button>`).join("")}</div></div>`:""}).join("")||`<p class="stat">Nothing matches.</p>`}
+function compCard(c){const ts=calcTraits(c.units).filter(x=>x.idx>=0&&x.def.k!=="solo").slice(0,5);
+  const pl=(c.res||"").split(/[\s,]+/).map(Number).filter(n=>n>=1&&n<=8);const avg=pl.length?(pl.reduce((a,b)=>a+b,0)/pl.length).toFixed(2):"–";
+  return `<div class="comp"><div class="row" style="justify-content:space-between"><b>${esc(c.name||"Untitled comp")}</b><span class="stat">Lv ${c.level} · avg <b>${avg}</b> over ${pl.length}</span></div>
+  <div class="pills">${ts.map(x=>`<span class="pill band">${x.count}${x.def.stars?"★":""} ${esc(x.t)}</span>`).join("")}</div>
+  <div class="chips">${c.units.map(u=>CH[u.n]?`<span class="chip k${CH[u.n].c}">${av(CH[u.n],22)}${esc(u.n)}${u.s>1?" "+"★".repeat(u.s):""}</span>`:"").join("")}</div>
+  <div class="row"><label class="stat" for="res-${c.id}">Placements</label><input type="text" id="res-${c.id}" data-res="${c.id}" value="${esc(c.res||"")}" placeholder="e.g. 2 5 1" style="flex:1"></div>
+  <textarea data-notes="${c.id}" placeholder="What happened: items, augments, unlock timing, what beat you" aria-label="Notes">${esc(c.notes||"")}</textarea>
+  <div class="row"><button class="btn sm" data-act="load" data-id="${c.id}">Load</button><span class="stat">Tier</span>${["S","A","B","C","D"].map(t=>`<button class="btn sm ${c.tier===t?"on":""}" data-act="ctier" data-id="${c.id}" data-t="${t}">${t}</button>`).join("")}
+  <button class="btn sm danger" data-act="del" data-id="${c.id}" style="margin-left:auto">${ui.del===c.id?"Tap again to delete":"Delete"}</button></div></div>`}
+function vBuilder(){const b=state.board,n=slots(b.units),gold=b.units.reduce((a,u)=>a+CH[u.n].c*Math.pow(3,(u.s||1)-1),0);
+  return `<h1>Team builder</h1><p class="lead">Build a board, check which breakpoints it hits, save it, then log placements after you test it on PBE.</p>
+<div class="bgrid">
+<section class="panel"><div class="row" style="justify-content:space-between">
+  <input type="text" id="bname" placeholder="Name this comp" value="${esc(b.name)}" style="flex:1" aria-label="Comp name">
+  <div class="row"><span class="stat">Level</span><button class="btn sm" data-act="lvl" data-d="-1" aria-label="Level down">−</button><b>${b.level}</b><button class="btn sm" data-act="lvl" data-d="1" aria-label="Level up">+</button></div></div>
+  <div class="board">${hexHTML()}</div><p class="rowlab">Top row is your front line</p>
+  <div class="row" style="justify-content:space-between;margin-top:6px"><span class="stat ${n>b.level?"over":""}">Team size <b>${n} / ${b.level}</b>${n>b.level?" · over cap unless you hold a slot bonus":""}</span><span class="stat">Board value <b>${gold}g</b></span></div>
+  ${editorHTML()}
+  <div class="row" style="margin-top:10px"><button class="btn pri" data-act="save">${b.id?"Update saved comp":"Save comp"}</button>${b.id?`<button class="btn" data-act="saveas">Save as new</button>`:""}<button class="btn" data-act="clear">Clear board</button></div>
+</section>
+<aside class="panel"><h2>Traits</h2>${traitsHTML()}</aside>
+<section class="panel wide"><h2>Champions</h2><div class="row filters">
+  <input type="text" id="pq" placeholder="Search" value="${esc(ui.pq)}" aria-label="Search champions to add">
+  ${[0,...COSTS].map(k=>`<button class="btn sm ${ui.pcost===k?"on":""}" data-act="pcost" data-k="${k}">${k||"All"}</button>`).join("")}
+  <select id="ptrait" aria-label="Filter picker by trait"><option value="">Any trait</option>${TRAITS.map(t=>`<option ${ui.ptrait===t.n?"selected":""}>${esc(t.n)}</option>`).join("")}</select></div>
+  <div id="pick">${pickHTML()}</div></section>
+<section class="panel wide"><h2>Saved comps · ${state.comps.length}</h2>${state.comps.length?`<div class="comps">${state.comps.map(compCard).join("")}</div>`:`<p class="stat">Nothing saved yet. Load an idea below, adjust it, and save it under your own name.</p>`}</section>
+<section class="panel wide"><h2>Test queue</h2><p class="stat" style="margin:0 0 6px">Starting points built from trait overlap. None of these has been played; each one is a question to answer.</p>
+  ${IDEAS.map((x,i)=>`<div class="idea"><div class="row" style="justify-content:space-between"><b>${esc(x[0])}</b><button class="btn sm" data-act="idea" data-i="${i}">Load</button></div><p>${esc(x[1])}</p><div class="chips">${x[2].map(n=>`<span class="chip k${CH[n].c} ${CH[n].u?"lock":""}">${av(CH[n],22)}${esc(n)}</span>`).join("")}</div></div>`).join("")}
+  <h3 style="margin-top:14px">Every vertical</h3><div class="chips">${TRAITS.filter(t=>t.k!=="solo"&&t.bp.length>1).map(t=>`<button class="btn sm" data-act="vertical" data-t="${esc(t.n)}">${esc(t.n)} · ${t.m.length}</button>`).join("")}</div></section>
+</div>`}
+
+const TIERS=["S","A","B","C","D"];
+function vTiers(){const m=ui.tmode;let items;
+  if(m==="comps")items=state.comps.map(c=>({key:c.id,label:c.name||"Untitled comp",k:0,tier:c.tier||""}));
+  else if(m==="champs")items=CHAMPS.map(c=>({key:c.n,label:c.n,k:c.c,tier:state.tiers.champs[c.n]||""}));
+  else items=TRAITS.filter(t=>t.k!=="solo").map(t=>({key:t.n,label:t.n,k:0,tier:state.tiers.traits[t.n]||""}));
+  const ch=i=>`<button class="chip ${i.k?"k"+i.k:""} ${ui.tsel===i.key?"sel":""}" data-act="tpick" data-key="${esc(i.key)}">${i.k?av(CH[i.key],22):""}${esc(i.label)}</button>`;
+  const row=(t,lab)=>`<div class="trow"><button class="tlab t${t||"U"}" data-act="tmove" data-t="${t}" aria-label="Move selected to ${lab}">${lab}</button><div class="tbody chips">${items.filter(i=>i.tier===t).map(ch).join("")}</div></div>`;
+  return `<h1>Your tier list</h1><p class="lead">Tap an entry, then tap a tier letter to place it. Rank only what you have actually tested; the comps list fills from the builder.</p>
+  <div class="row filters">${[["comps","Comps"],["champs","Champions"],["traits","Traits"]].map(([k,l])=>`<button class="btn sm ${m===k?"on":""}" data-act="tmode" data-m="${k}">${l}</button>`).join("")}</div>
+  ${TIERS.map(t=>row(t,t)).join("")}${row("","Untested")}
+  ${m==="comps"&&!state.comps.length?`<p class="stat">Save a comp in the team builder to rank it here.</p>`:""}`}
+
+const LEVELING={
+standard:["Standard (4-cost carries)",[["2-1","4","Buy XP once. Field your strongest board and keep pairs."],["2-5","5","10–20g left after leveling."],["3-2","6","30g+ left after leveling."],["3-5","6","50g. Full interest from here."],["4-1","7","Level and hold 40–50g. Roll only if you are bleeding."],["4-2 to 4-5","8","Arrive with 30g+ after leveling, roll down to about 10g for 2-star 4-costs."],["5-1 to 5-5","8","Rebuild to 50g."],["6-1 onward","9","Level when stable, then roll for 5-costs and unlock targets."]]],
+streak:["Win streak, fast 8 or 9",[["2-1","4","Level to keep the streak."],["2-5","5","Stay above 10g."],["3-1","6","Level a round early to protect the streak."],["3-5","7","Only with 30g+ after leveling."],["4-2","8","Light roll for upgrades, keep 30g+."],["5-2","9","50g+ banked; roll for 5-costs and finish unlock quests."]]],
+one:["1-cost reroll",[["2-1","4","Buy XP once, hold every copy of your carry."],["2-5","4","Save. Aim for 30g+."],["3-1","4 or 5","50g. Slow-roll: spend only what is above 50g each round."],["3-5 to 4-1","6","Level once the main carries are 3-star."],["4-5","7","Add your second trait."],["5-1 onward","8","Cap the board with unlocks and 4-costs."]]],
+two:["2-cost reroll",[["2-1","4","Buy XP once."],["2-5","5","Save toward 50g."],["3-2","6","50g. Slow-roll above 50g at level 6."],["4-1 to 4-2","7","Level after your 2-costs are 3-star."],["5-1 onward","8","Add 4-costs and unlocks."]]],
+three:["3-cost reroll",[["2-1 to 3-2","4 → 6","Same as Standard."],["4-1","7","50g. Slow-roll above 50g at level 7."],["5-1 onward","8","Level after the 3-costs are 3-star."]]]};
+const ODDS=[[1,100,0,0,0,0],[2,100,0,0,0,0],[3,75,25,0,0,0],[4,55,30,15,0,0],[5,45,33,20,2,0],[6,30,40,25,5,0],[7,19,30,40,10,1],[8,15,20,32,30,3],[9,10,17,25,33,15],[10,5,10,20,40,25]];
+function vEarly(){
+  const pool=CHAMPS.filter(c=>c.c<=2&&!c.u);
+  const openers=TRAITS.filter(t=>t.k!=="solo").map(t=>{const m=pool.filter(c=>c.t.includes(t.n));const cnt=t.stars?m.length*2:m.length;const hit=t.bp.filter(b=>b<=cnt).pop();return{t,m,hit}}).filter(o=>o.hit&&o.m.length>=2).sort((a,b)=>b.m.length-a.m.length);
+  const early=CHAMPS.filter(c=>c.u&&c.c<=2);const L=LEVELING[ui.strat];
+  return `<h1>Early game and gold</h1><p class="lead">What you can field from the opening shop, which quests you can start in Stage 2, and how much gold to hold at each stage.</p>
+<p class="note">The gold rules, XP costs, shop odds and pool sizes below are the live Set 18 values (patch 18.6). Set 19 adds a 7-cost tier and Riot has not said how it changes odds or pools, so re-check these on your first PBE game. Gold targets per stage are rules of thumb.</p>
+<div class="grid2">
+<section class="panel"><h2>Traits you can open with</h2><p class="stat" style="margin:0 0 8px">Uses only 1- and 2-cost champions that need no quest. The number is the breakpoint those units reach.</p>
+${openers.map(o=>`<div class="idea"><div class="row" style="justify-content:space-between"><b>${esc(o.t.n)} ${o.hit}${o.t.stars?"★ (at 2-star each)":""}</b><button class="btn sm" data-act="opener" data-t="${esc(o.t.n)}">Load</button></div><div class="chips">${o.m.map(c=>chip(c,"add-go")).join("")}</div></div>`).join("")}</section>
+<section class="panel"><h2>Quests you can start in Stage 2</h2><p class="stat" style="margin:0 0 8px">1- and 2-cost unlocks. Most want items on a matching unit, so slam early components to open them.</p>
+${early.map(c=>`<div class="idea"><div class="row">${chip(c,"add-go")}<span class="stat">${esc(c.t.join(" · "))}</span></div><p>${esc(c.u)}</p></div>`).join("")}
+<div class="idea"><b>Chains worth knowing</b><p>Ziggs → Kobuko. Annie → Tibbers. Xayah → Wukong, Janna, Lee Sin. Alune or Yone → Aphelios. Malzahar → Baron Nashor. The two Akalis lock each other out.</p></div></section>
+<section class="panel"><h2>Level and gold by stage</h2><div class="row filters">${Object.entries(LEVELING).map(([k,v])=>`<button class="btn sm ${ui.strat===k?"on":""}" data-act="strat" data-k="${k}">${esc(v[0])}</button>`).join("")}</div>
+<div class="scroll"><table><thead><tr><th>Round</th><th>Level</th><th>Gold and action</th></tr></thead><tbody>${L[1].map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>
+<p class="stat" style="margin:10px 0 0">True Damage changes this: on the B-Side you are paid for losing, so test it with the reroll lines; on the A-Side use the win-streak line.</p></section>
+<section class="panel"><h2>Gold rules</h2><table><tbody>
+<tr><td>Passive income</td><td><b>5g</b> per round from Stage 2</td></tr>
+<tr><td>Interest</td><td><b>+1g per 10g</b> banked, max +5 at 50g</td></tr>
+<tr><td>Winning a player combat</td><td><b>+1g</b></td></tr>
+<tr><td>Streak (win or loss)</td><td>3–4: <b>+1g</b> · 5: <b>+2g</b> · 6+: <b>+3g</b></td></tr>
+<tr><td>Buy XP</td><td><b>4g</b> for 4 XP; +2 XP free each round</td></tr>
+<tr><td>Reroll</td><td><b>2g</b></td></tr></tbody></table>
+<h3 style="margin-top:14px">XP to next level</h3><div class="scroll"><table><thead><tr><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr></thead><tbody><tr><td>2</td><td>6</td><td>10</td><td>20</td><td>36</td><td>56</td><td>64</td><td>64</td></tr></tbody></table></div></section>
+<section class="panel" style="grid-column:1/-1"><h2>Shop odds by level and pool size</h2><div class="scroll"><table><thead><tr><th>Level</th>${[1,2,3,4,5].map(k=>`<th><span class="dot k${k}"></span> ${k}-cost</th>`).join("")}</tr></thead><tbody>${ODDS.map(r=>`<tr><td><b>${r[0]}</b></td>${r.slice(1).map(v=>`<td>${v?v+"%":"–"}</td>`).join("")}</tr>`).join("")}
+<tr><td>Copies each</td><td>30</td><td>25</td><td>18</td><td>10</td><td>9</td></tr></tbody></table></div>
+<p class="stat" style="margin:10px 0 0">Levels 7 to 9 and the pool sizes are confirmed for Set 18; the other rows are the long-standing values. 7-cost odds are not published.</p></section></div>`}
+
+function vItems(){const short=["Sword","Bow","Rod","Tear","Vest","Cloak","Belt","Gloves"];
+  return `<h1>Items</h1><p class="lead">The 36 core recipes. Read down from one component and across from the other.</p>
+<p class="note">Recipes are the live Set 18 list (patch 18.6); core items rarely change between sets but can. Set 19 emblem recipes (Spatula and Frying Pan) are not published. In the builder you can attach an emblem for any band or class to test a breakpoint, but some of those emblems may not exist or may not be craftable.</p>
+<section class="panel"><div class="scroll"><table class="rec"><thead><tr><th></th>${short.map(s=>`<th>${s}</th>`).join("")}</tr></thead><tbody>
+${COMPONENTS.map((c,i)=>`<tr><td>${esc(c)}</td>${COMPONENTS.map((d,j)=>`<td class="${j<i?"e":""}">${esc(recipe(i,j))}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>
+<div class="grid2" style="margin-top:14px"><section class="panel"><h2>Spatula and Frying Pan</h2><table><tbody><tr><td>Spatula + Spatula</td><td>Tactician's Crown (+1 team size)</td></tr><tr><td>Spatula + Frying Pan</td><td>Tactician's Cape</td></tr><tr><td>Frying Pan + Frying Pan</td><td>Tactician's Shield</td></tr><tr><td>Spatula + component</td><td>Band emblem (Set 19 list not published)</td></tr><tr><td>Frying Pan + component</td><td>Class emblem (Set 19 list not published)</td></tr></tbody></table></section>
+<section class="panel"><h2>Items that open Set 19 quests</h2><ul class="tiers"><li><b>→</b>Any item on Ziggs: Kobuko. Any item on Annie: Tibbers.</li><li><b>→</b>Items on a Beach Pop unit: Ashe. On a Classical unit: Nasus, Renata Glasc, Samira.</li><li><b>→</b>Items on an Ionic Spark or Hitmaker unit: Jinx.</li><li><b>→</b>Chain Vest on a Caster or Marksman: Alistar.</li><li><b>→</b>Hitmaker gives its bonus to whoever holds the most items, so stack one carry.</li></ul></section></div>`}
+
+/* ---------- RENDER + EVENTS ---------- */
+function render(){
+  document.getElementById("nav").innerHTML=VIEWS.map(([k,l])=>`<a href="#${k}" class="${view===k?"on":""}">${l}</a>`).join("");
+  app.innerHTML={champions:vChampions,unlocks:vUnlocks,traits:vTraits,builder:vBuilder,"tier-list":vTiers,"early-game":vEarly,items:vItems}[view]();
+}
+function route(){const h=location.hash.slice(1);view=VIEWS.some(v=>v[0]===h)?h:"champions";ui.sel=-1;render();window.scrollTo(0,0)}
+function freeHex(){const used=new Set(state.board.units.map(u=>u.h));for(let i=0;i<28;i++)if(!used.has(i))return i;return -1}
+function addChamp(n){const h=freeHex();if(h<0||!CH[n])return;state.board.units.push({n,h,s:1,it:[]});ui.sel=state.board.units.length-1;save()}
+function loadUnits(names,name){const b=state.board;b.id=null;b.name=name;b.units=names.filter(n=>CH[n]).slice(0,28).map((n,i)=>({n,h:i,s:1,it:[]}));b.level=Math.min(10,Math.max(b.level,slots(b.units)));ui.sel=-1;save()}
+function go(v){if(location.hash.slice(1)===v){view=v;render()}else location.hash=v}
+document.addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const a=el.dataset.act,b=state.board;
+  if(a!=="del")ui.del=null;
+  switch(a){
+    case "cost":ui.cost=+el.dataset.k;break;
+    case "compact":ui.compact=!ui.compact;break;
+    case "pcost":ui.pcost=+el.dataset.k;break;
+    case "add":addChamp(el.dataset.n);break;
+    case "add-go":addChamp(el.dataset.n);go("builder");return;
+    case "vertical":{const t=TR[el.dataset.t];loadUnits([...t.m].sort((x,y)=>(!!x.u-!!y.u)||x.c-y.c).map(c=>c.n),t.n+" vertical");go("builder");return}
+    case "opener":{const t=TR[el.dataset.t];loadUnits(t.m.filter(c=>c.c<=2&&!c.u).map(c=>c.n),t.n+" opener");b.level=Math.max(4,slots(b.units));save();go("builder");return}
+    case "idea":{const x=IDEAS[+el.dataset.i];loadUnits(x[2],x[0]);window.scrollTo(0,0);break}
+    case "hex":{const h=+el.dataset.h,i=b.units.findIndex(u=>u.h===h);
+      if(ui.sel>=0&&b.units[ui.sel]){if(i===ui.sel)ui.sel=-1;else{if(i>=0)b.units[i].h=b.units[ui.sel].h;b.units[ui.sel].h=h;ui.sel=-1;save()}}else if(i>=0)ui.sel=i;break}
+    case "star":if(b.units[ui.sel]){b.units[ui.sel].s=+el.dataset.s;save()}break;
+    case "remove":if(b.units[ui.sel]){b.units.splice(ui.sel,1);ui.sel=-1;save()}break;
+    case "lvl":b.level=Math.max(1,Math.min(11,b.level+ +el.dataset.d));save();break;
+    case "clear":b.units=[];b.id=null;b.name="";ui.sel=-1;save();break;
+    case "save":case "saveas":{if(!b.units.length)break;const snap={name:b.name||"Untitled comp",level:b.level,units:JSON.parse(JSON.stringify(b.units))};
+      const ex=a==="save"&&state.comps.find(c=>c.id===b.id);if(ex)Object.assign(ex,snap);else{b.id="c"+Date.now().toString(36);state.comps.unshift(Object.assign({id:b.id,tier:"",res:"",notes:""},snap))}save();break}
+    case "load":{const c=state.comps.find(c=>c.id===el.dataset.id);if(c){b.id=c.id;b.name=c.name;b.level=c.level;b.units=JSON.parse(JSON.stringify(c.units));ui.sel=-1;save();if(view!=="builder"){go("builder");return}window.scrollTo(0,0)}break}
+    case "ctier":{const c=state.comps.find(c=>c.id===el.dataset.id);if(c){c.tier=c.tier===el.dataset.t?"":el.dataset.t;save()}break}
+    case "del":if(ui.del===el.dataset.id){state.comps=state.comps.filter(c=>c.id!==ui.del);if(b.id===ui.del)b.id=null;ui.del=null;save()}else ui.del=el.dataset.id;break;
+    case "tmode":ui.tmode=el.dataset.m;ui.tsel=null;break;
+    case "tpick":ui.tsel=ui.tsel===el.dataset.key?null:el.dataset.key;break;
+    case "tmove":if(ui.tsel!==null){const t=el.dataset.t;if(ui.tmode==="comps"){const c=state.comps.find(c=>c.id===ui.tsel);if(c)c.tier=t}else{const m=state.tiers[ui.tmode];if(t)m[ui.tsel]=t;else delete m[ui.tsel]}ui.tsel=null;save()}break;
+    case "strat":ui.strat=el.dataset.k;break;
+    case "export":{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:"application/json"}));a.download="prismatic-tour-lab.json";a.click();return}
+    case "import":document.getElementById("imp").click();return;
+    default:return}
+  render()});
+document.addEventListener("input",e=>{const t=e.target;
+  if(t.id==="q"){ui.q=t.value;document.getElementById("list").innerHTML=champList(view==="unlocks")}
+  else if(t.id==="pq"){ui.pq=t.value;document.getElementById("pick").innerHTML=pickHTML()}
+  else if(t.id==="bname"){state.board.name=t.value}});
+document.addEventListener("change",e=>{const t=e.target;
+  if(t.id==="imp"){const f=t.files[0];if(f)f.text().then(s=>{state=norm(JSON.parse(s));save();render()}).catch(()=>{});t.value="";return}
+  if(t.id==="ftrait"){ui.trait=t.value;render()}
+  else if(t.id==="ptrait"){ui.ptrait=t.value;render()}
+  else if(t.id==="bname"){save()}
+  else if(t.dataset.item!==undefined){const u=state.board.units[ui.sel];if(u){u.it=u.it||[];u.it[+t.dataset.item]=t.value;save();render()}}
+  else if(t.dataset.res!==undefined){const c=state.comps.find(c=>c.id===t.dataset.res);if(c){c.res=t.value;save();render()}}
+  else if(t.dataset.notes!==undefined){const c=state.comps.find(c=>c.id===t.dataset.notes);if(c){c.notes=t.value;save()}}});
+window.addEventListener("hashchange",route);
+if(!state.board.units.length&&!state.comps.length&&!state.upd){state.board.name=IDEAS[0][0];state.board.units=IDEAS[0][2].map((n,i)=>({n,h:i,s:1,it:[]}))}
+route();
+</script>
+</body>
+</html>
