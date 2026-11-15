@@ -88,7 +88,7 @@ Battle of the Bands~G~With enough active Bands, your team gains Attack Damage an
 Beltsmith II~G~A Giant's Belt completed item now and another later.
 Big Solo~G~Your Heartsteel Biases gain more of all active Heartsteel bonuses. Gain Heartsteel champions.
 Birthday Reunion~G~Gain a champion now, a component at a later level, then another champion.
-Blind Box II~G~Gain a random Prismatic augment, but lose gold.
+Blind Box II~G~Gain a random Prismatic augment, but lose 8 gold.
 Bodyguard Training~G~Team Armor and Magic Resist that scales with player level.
 Bonus Gifts~G~Start with gray loot orbs; opening orbs can give more. Has a + version.
 Booster Pack~G~Gain random champions with at least one guaranteed. Has + and ++ versions.
@@ -222,7 +222,7 @@ Component Quest~P~A component and gold now; your next 7 player-combat wins each 
 Cursed Crown~P~+1 team size, but you take double player damage on a loss.
 Deadlier Blades~P~Gain a Deathblade. Deathblades permanently gain AD on takedowns.
 Deadlier Caps~P~Gain a Rabadon's Deathcap. Deathcaps give Mana Regen and permanently gain AP on takedowns.
-Duplicator Deal~P~Gain Champion Duplicators, but you can no longer 3-star champions.
+Duplicator Deal~P~Gain 3 Champion Duplicators, but you can no longer 3-star champions.
 Expected Unexpectedness~P~Now and at the next 2 stages, roll 3 dice for rewards.
 Flexible~P~A random Emblem now and every stage. Team Health for each Emblem held.
 Forged In Strength~P~Gain an Artifact. Dropping below a Health threshold gives more Artifacts, an item and components.
@@ -298,5 +298,6 @@ Wand Overflow~P~Gain Needlessly Large Rods. Your Rods grant Attack Speed.
 We Stick Together~P~Gain an Emblem for a random trait and a completed item anvil. Allies with that trait gain Attack Speed.
 Worth the Wait II~P~Gain 2 copies of a random 2-cost, then another copy every round for the rest of the game.
 Renekton hero augment~H~Name not confirmed (heard on stream as something like "Lifeguard to the Rescue"). Renekton sits out the start of combat, then jumps in once a unit drops low (about 30% Health was mentioned), gains a shield and goes on an attack frenzy.
+Pyramid Scheme~U~After you fight a player who is not in the scheme, steal 3 gold and hand them a weaker copy. Gain 1 gold a round per player in it, or 10 if every living player is.
 Annie hero augment~H~Name not confirmed. Annie rides on the back of Tibbers and throws fireballs.
 Lillia hero augment~H~Name not confirmed. Lillia leaps into the enemy backline and applies poison.`;
