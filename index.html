@@ -470,8 +470,8 @@ const asUnits=names=>names.map(n=>({n,s:genStar(CH[n]),it:[]}));
 function scoreTeam(names,targets){const ts=calcTraits(asUnits(names));let s=0;
   for(const x of ts){const tgt=targets.includes(x.t);
     if(x.def.k==="solo"||x.t==="Collab"||(!tgt&&x.def.bp[0]===1&&x.count===1)){s+=.3;continue}
-    if(x.idx>=0)s+=tgt?3*(x.idx+1):1+.6*x.idx;else s-=tgt?1.2:.45;
-    const nxt=x.def.bp.find(b=>b>x.count);if(tgt&&nxt&&nxt-x.count===1)s-=.6}
+    if(x.idx>=0)s+=tgt?3*(x.idx+1):1+.6*x.idx;else s+=tgt?3*x.count/x.def.bp[0]:-.45;
+    const nxt=x.def.bp.find(b=>b>x.count);if(tgt&&x.idx>=0&&nxt&&nxt-x.count===1)s-=.6}
   targets.forEach(t=>{if(!ts.some(x=>x.t===t&&x.idx>=0))s-=5});
   const fr=names.filter(n=>CH[n].t.some(t=>FRONT.includes(t))).length;s+=Math.min(fr,3)*1.1;if(fr<2)s-=3;
   if(names.length>=8&&!names.some(n=>CH[n].c>=4))s-=1.5;return s}
@@ -497,11 +497,14 @@ function genOne(){const st=STYLES[ui.gStyle];const N=ui.gN;
     if(ui.gUnlock==="some"&&c.u&&team.filter(n=>CH[n].u).length>=Math.max(1,Math.floor(N/3)))return false;return true};
   let best=null,bestS=-1e9;
   for(let r=0;r<4;r++){let team=[];if(ui.gChamp&&CH[ui.gChamp])team.push(ui.gChamp);
+    // seed with enough members of the first target to switch it on, so the search starts on the right hill
+    if(targets[0]){const d=TR[targets[0]],mem=pool.filter(c=>c.t.includes(d.n)).sort(()=>Math.random()-.5);
+      for(const c of mem){const cnt=calcTraits(asUnits(team)).find(x=>x.t===d.n);if(cnt&&cnt.count>=d.bp[0])break;if(fits(team,c))team.push(c.n)}}
     for(;;){let pick=null,ps=-1e9;const base=scoreTeam(team,targets);
       for(const c of pool){if(!fits(team,c))continue;const g=scoreTeam([...team,c.n],targets)-base+Math.random()*1.2+(c.t.some(t=>targets.includes(t))?.8:0);if(g>ps){ps=g;pick=c}}
       if(!pick)break;team.push(pick.n)}
     let s=scoreTeam(team,targets);
-    for(let i=0;i<120;i++){const out=Math.floor(Math.random()*team.length);if(team[out]===ui.gChamp)continue;const c=pool[Math.floor(Math.random()*pool.length)];const rest=team.filter((_,j)=>j!==out);if(!fits(rest,c))continue;const s2=scoreTeam([...rest,c.n],targets);if(s2>s){team=[...rest,c.n];s=s2}}
+    for(let i=0;i<120;i++){const out=Math.floor(Math.random()*team.length);if(team[out]===ui.gChamp)continue;if(Math.random()<.5&&targets.length&&CH[team[out]].t.includes(targets[0]))continue;const c=pool[Math.floor(Math.random()*pool.length)];const rest=team.filter((_,j)=>j!==out);if(!fits(rest,c))continue;const s2=scoreTeam([...rest,c.n],targets);if(s2>s){team=[...rest,c.n];s=s2}}
     if(s>bestS){bestS=s;best=team}}
   const act=calcTraits(asUnits(best)).filter(x=>x.idx>=0&&x.def.k!=="solo");
   const name=act.sort((a,b)=>targets.includes(b.t)-targets.includes(a.t)).slice(0,3).map(x=>x.t+" "+x.def.bp[x.idx]).join(" · ")||"Mixed board";
