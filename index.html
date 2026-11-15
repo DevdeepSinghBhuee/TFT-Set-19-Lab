@@ -111,6 +111,15 @@ th{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.05e
 .hex span{position:relative;font-size:calc(var(--hx)*.17);font-weight:700;line-height:1.05;text-align:center;padding:0 3px;overflow-wrap:anywhere}
 .hex i{position:relative;display:block;font-style:normal;font-size:calc(var(--hx)*.16);color:var(--c5);letter-spacing:-1px}
 .hex em{position:relative;display:block;font-style:normal;font-size:9px;color:var(--accent2)}
+.hex{touch-action:none;user-select:none;-webkit-user-select:none;transition:transform .08s,filter .08s}
+.hex.full{cursor:grab}
+.hex.full:hover{filter:brightness(1.2)}
+.hex.drop{background:var(--accent2);transform:scale(1.08)}
+.hex.dragsrc{opacity:.3}
+.tile{user-select:none;-webkit-user-select:none}
+.ghost{position:fixed;z-index:99;pointer-events:none;width:calc(var(--hx)*1.15);height:calc(var(--hx)*1.31);margin:calc(var(--hx)*-.65) 0 0 calc(var(--hx)*-.57);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:var(--k,var(--line));display:grid;place-items:center;font-weight:700;font-size:11px;filter:drop-shadow(0 6px 10px #000)}
+.ghost img{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);object-fit:cover;object-position:85% 20%;clip-path:inherit}
+body.dragging,body.dragging *{cursor:grabbing!important}
 .rowlab{font-size:11px;color:var(--mute);text-align:center;margin:6px 0 0}
 .stat{font-size:13px;color:var(--mute)}
 .stat b{color:var(--ink)}
@@ -356,7 +365,7 @@ function cands(n){const base=n.replace(/ \(.*/,"");const k=CDK[base]||base.toLow
   if(LOCAL)out.push("img/"+fileKey(n)+".webp");
   if(CDB)out.push(cdUrl(CDB,k));
   const d=base in DDK?DDK[base]:base.replace(/[^A-Za-z]/g,"");if(DDV&&d)out.push("https://ddragon.leagueoflegends.com/cdn/"+DDV+"/img/champion/"+d+".png");return out}
-function im(n){const r=RES[n];if(r==="")return "";const src=r||cands(n)[0];return src?`<img alt="" loading="lazy" src="${src}" data-n="${esc(n)}" data-i="${r?-1:0}" onerror="IE(this)" onload="IL(this)">`:""}
+function im(n){const r=RES[n];if(r==="")return "";const src=r||cands(n)[0];return src?`<img alt="" draggable="false" loading="lazy" src="${src}" data-n="${esc(n)}" data-i="${r?-1:0}" onerror="IE(this)" onload="IL(this)">`:""}
 function IE(el){const n=el.dataset.n,cs=cands(n),i=+el.dataset.i+1;if(i<cs.length){el.dataset.i=i;el.src=cs[i]}else{RES[n]="";el.remove()}}
 function IL(el){RES[el.dataset.n]=el.src}
 const ini=n=>n.replace(/ \(.*/,"").split(/[^A-Za-z]+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase();
@@ -414,7 +423,7 @@ function hexHTML(){const by={};state.board.units.forEach((u,i)=>by[u.h]=i);let h
     if(i===undefined)h+=`<button class="hex" data-act="hex" data-h="${x}" aria-label="Empty hex"></button>`;
     else{const u=state.board.units[i],ch=CH[u.n];h+=`<button class="hex full k${ch.c} ${ui.sel===i?"sel":""}" data-act="hex" data-h="${x}">${im(u.n)}<span><i>${"★".repeat(u.s||1)}</i>${esc(u.n.replace(/ \(.*/,""))}${(u.it||[]).filter(Boolean).length?`<em>${"●".repeat(u.it.filter(Boolean).length)}</em>`:""}</span></button>`}}
     h+="</div>"}return h}
-function editorHTML(){const u=state.board.units[ui.sel];if(!u)return `<p class="stat">Tap a champion below to place it. Tap a unit on the board to set stars and items, then tap another hex to move it.</p>`;
+function editorHTML(){const u=state.board.units[ui.sel];if(!u)return `<p class="stat">Drag a champion onto a hex, drag units between hexes to move or swap them, and drag one off the board (or right-click it) to remove it. On a phone, tap a champion to place it. Tap a unit to set stars and items.</p>`;
   const ch=CH[u.n];const opt=v=>`<option value="">No item</option><optgroup label="Completed items">${ITEMS.map(i=>`<option ${v===i?"selected":""}>${esc(i)}</option>`).join("")}</optgroup><optgroup label="Emblems (+1 trait)">${EMBLEMS.map(i=>`<option ${v===i?"selected":""}>${esc(i)}</option>`).join("")}</optgroup>`;
   return `<div class="editor"><div class="row"><b>${esc(u.n)}</b><span class="stat">${esc(ch.t.join(" · "))}</span></div>
   <div class="row">${[1,2,3].map(s=>`<button class="btn sm ${u.s===s?"on":""}" data-act="star" data-s="${s}">${"★".repeat(s)}</button>`).join("")}<button class="btn sm danger" data-act="remove">Remove</button></div>
@@ -600,7 +609,30 @@ function freeHex(){const used=new Set(state.board.units.map(u=>u.h));for(let i=0
 function addChamp(n){const h=freeHex();if(h<0||!CH[n])return;state.board.units.push({n,h,s:1,it:[]});ui.sel=state.board.units.length-1;save()}
 function loadUnits(names,name){const b=state.board;b.id=null;b.name=name;b.units=names.filter(n=>CH[n]).slice(0,28).map((n,i)=>({n,h:i,s:1,it:[]}));b.level=Math.min(10,Math.max(b.level,slots(b.units)));ui.sel=-1;save()}
 function go(v){if(location.hash.slice(1)===v){view=v;render()}else location.hash=v}
-document.addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const a=el.dataset.act,b=state.board;
+/* drag and drop on the board (mouse and touch via Pointer Events) */
+let drag=null,noClick=false;
+const hexAt=(x,y)=>{const t=document.elementFromPoint(x,y);return t&&t.closest?t.closest(".hex"):null};
+function endDrag(){document.querySelectorAll(".drop,.dragsrc").forEach(e=>e.classList.remove("drop","dragsrc"));const g=document.querySelector(".ghost");if(g)g.remove();document.body.classList.remove("dragging")}
+document.addEventListener("pointerdown",e=>{if(e.button||view!=="builder")return;const hx=e.target.closest(".hex.full"),tl=e.target.closest('.tile[data-act="add"]');
+  if(hx){const i=state.board.units.findIndex(u=>u.h===+hx.dataset.h);if(i>=0)drag={i,n:state.board.units[i].n,x:e.clientX,y:e.clientY,el:hx,on:false}}
+  else if(tl&&e.pointerType==="mouse")drag={i:-1,n:tl.dataset.n,x:e.clientX,y:e.clientY,el:tl,on:false}});
+document.addEventListener("pointermove",e=>{if(!drag)return;
+  if(!drag.on){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;drag.on=true;drag.el.classList.add("dragsrc");document.body.classList.add("dragging");
+    const g=document.createElement("div");g.className="ghost k"+CH[drag.n].c;g.innerHTML=ini(drag.n)+im(drag.n);document.body.appendChild(g)}
+  e.preventDefault();const g=document.querySelector(".ghost");g.style.left=e.clientX+"px";g.style.top=e.clientY+"px";
+  const hx=hexAt(e.clientX,e.clientY);document.querySelectorAll(".drop").forEach(x=>x!==hx&&x.classList.remove("drop"));if(hx&&hx!==drag.el)hx.classList.add("drop")});
+document.addEventListener("pointerup",e=>{if(!drag)return;const d=drag;drag=null;if(!d.on)return;endDrag();noClick=true;setTimeout(()=>noClick=false,0);
+  const b=state.board,hx=hexAt(e.clientX,e.clientY);
+  if(hx){const h=+hx.dataset.h,j=b.units.findIndex(u=>u.h===h);
+    if(d.i>=0){if(j!==d.i){if(j>=0)b.units[j].h=b.units[d.i].h;b.units[d.i].h=h}}
+    else{if(j>=0)b.units.splice(j,1);b.units.push({n:d.n,h,s:1,it:[]})}}
+  else if(d.i>=0&&!e.target.closest(".editor"))b.units.splice(d.i,1);
+  else return;
+  ui.sel=-1;save();render()});
+document.addEventListener("pointercancel",()=>{if(drag){drag=null;endDrag()}});
+document.addEventListener("dragstart",e=>e.preventDefault());
+document.addEventListener("contextmenu",e=>{const hx=view==="builder"&&e.target.closest(".hex.full");if(!hx)return;e.preventDefault();const i=state.board.units.findIndex(u=>u.h===+hx.dataset.h);if(i>=0){state.board.units.splice(i,1);ui.sel=-1;save();render()}});
+document.addEventListener("click",e=>{if(noClick)return;const el=e.target.closest("[data-act]");if(!el)return;const a=el.dataset.act,b=state.board;
   if(a!=="del")ui.del=null;
   switch(a){
     case "cost":ui.cost=+el.dataset.k;break;
