@@ -1,0 +1,34 @@
+name: Fetch Set 19 champion art
+# One-off helper: copies the Set 19 champion tiles listed in art/sources.txt into img/.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [art/sources.txt, .github/workflows/fetch-art.yml]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download tiles
+        run: |
+          mkdir -p img
+          ok=0; bad=0
+          for f in $(cat art/sources.txt); do
+            key="${f%%.*}"
+            if curl -fsSL --retry 2 -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36" \
+                 -e "https://tftacademy.com/learn/new-set" \
+                 -o "img/$key.webp" "https://tftacademy.com/_app/immutable/assets/$f.webp" \
+               && file "img/$key.webp" | grep -qi "web/p\|webp"; then ok=$((ok+1)); else bad=$((bad+1)); rm -f "img/$key.webp"; echo "failed: $f"; fi
+            sleep 0.3
+          done
+          echo "downloaded=$ok failed=$bad"
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add img
+          git diff --cached --quiet || git commit -m "Add Set 19 champion tiles"
+          git push

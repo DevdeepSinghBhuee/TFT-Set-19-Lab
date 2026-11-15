@@ -71,12 +71,14 @@ textarea{width:100%;resize:vertical;min-height:54px}
 .compact .cards{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .av{position:relative;display:inline-grid;place-items:center;width:var(--s,48px);height:var(--s,48px);border-radius:8px;border:2px solid var(--k,var(--line));background:var(--panel2);overflow:hidden;flex:none;font-size:calc(var(--s,48px)*.3);font-weight:700;color:var(--mute)}
 .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.av img{object-position:60% 25%}
+.av.w{height:calc(var(--s,48px)*.6);font-size:calc(var(--s,48px)*.2)}
 .chip .av{border-width:1px;border-radius:5px}
-.tile{background:none;border:0;padding:0;width:64px;display:grid;justify-items:center;gap:3px;font-size:11px;font-weight:600;line-height:1.15;color:var(--ink);text-align:center;position:relative}
+.tile{background:none;border:0;padding:0;width:88px;display:grid;justify-items:center;gap:3px;font-size:11px;font-weight:600;line-height:1.15;color:var(--ink);text-align:center;position:relative}
 .tile:hover .av{border-color:#fff}
 .tile.onb{opacity:.4}
 .tile.lock::after{content:"🔒";position:absolute;top:-4px;right:0;font-size:12px}
-.hex img{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);object-fit:cover;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);opacity:.6}
+.hex img{object-position:60% 25%;position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);object-fit:cover;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);opacity:.75}
 .hex.full span{text-shadow:0 1px 3px #000,0 0 6px #000}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--k,var(--line));border-radius:7px;padding:4px 9px;font-size:13px;font-weight:600;text-align:left;display:inline-flex;align-items:center;gap:6px}
@@ -146,7 +148,7 @@ footer{max-width:1280px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font
   <button class="btn sm" data-act="export">Export data</button><button class="btn sm" data-act="import">Import data</button><input type="file" id="imp" accept="application/json,.json" hidden>
 </div></header>
 <main id="app"></main>
-<footer>Personal test notebook for TFT Set 19 (Prismatic Tour). Your comps and tier list are saved in this browser; use Export and Import to move them between phone and laptop. Champion art loads from Riot's public asset CDNs. Champion, trait and unlock data read from the Set 19 reveal page on <a href="https://tftacademy.com/learn/new-set">TFT Academy</a> on 15 Nov 2026, the day of Riot's <a href="https://www.youtube.com/watch?v=ehNDT_IYjSQ">Dev Drop</a>. Not affiliated with or endorsed by Riot Games or TFT Academy.</footer>
+<footer>Personal test notebook for TFT Set 19 (Prismatic Tour). Your comps and tier list are saved in this browser; use Export and Import to move them between phone and laptop. Champion art is Riot Games' Set 19 artwork. Champion, trait and unlock data read from the Set 19 reveal page on <a href="https://tftacademy.com/learn/new-set">TFT Academy</a> on 15 Nov 2026, the day of Riot's <a href="https://www.youtube.com/watch?v=ehNDT_IYjSQ">Dev Drop</a>. Not affiliated with or endorsed by Riot Games or TFT Academy.</footer>
 
 <script>
 "use strict";
@@ -343,19 +345,22 @@ function save(){state.upd=Date.now();try{localStorage.setItem(LS,JSON.stringify(
 /* ---------- IMAGES: Riot art, tried in order; falls back to initials ---------- */
 const CDK={"Nunu & Willump":"nunu","Dr. Mundo":"drmundo","Baron Nashor":"baron"};
 const DDK={"Kai'Sa":"Kaisa","K'Sante":"KSante","Dr. Mundo":"DrMundo","Miss Fortune":"MissFortune","Lee Sin":"LeeSin","Twisted Fate":"TwistedFate","Nunu & Willump":"Nunu","Renata Glasc":"Renata","Wukong":"MonkeyKing","Tibbers":"","Kobuko":"","Baron Nashor":"","Smeech":"","Alune":""};
-let DDV=null,CDB=null;const RES={};
+let DDV=null,CDB=null,LOCAL=false;const RES={};
+const fileKey=n=>n==="Akali (K|DA)"?"Akali_KDA":n.replace(/ \(.*/,"").replace(/[^A-Za-z]/g,"");
+{const p=new Image();p.onload=()=>{LOCAL=true;resetImgs()};p.src="img/Elise.webp"}
 const cdUrl=(b,k)=>"https://raw.communitydragon.org/"+b+"/game/assets/characters/tft19_"+k+"/hud/tft19_"+k+"_square.tft_set19.png";
 const resetImgs=()=>{Object.keys(RES).forEach(k=>delete RES[k]);render()};
 // Set 19 tiles only exist on Riot's asset mirror once the set is on PBE; probe once and switch over when they do.
 ["latest","pbe"].forEach(b=>{const p=new Image();p.onload=()=>{CDB=b;resetImgs()};p.src=cdUrl(b,"elise")});
 function cands(n){const base=n.replace(/ \(.*/,"");const k=CDK[base]||base.toLowerCase().replace(/[^a-z]/g,"");const out=[];
+  if(LOCAL)out.push("img/"+fileKey(n)+".webp");
   if(CDB)out.push(cdUrl(CDB,k));
   const d=base in DDK?DDK[base]:base.replace(/[^A-Za-z]/g,"");if(DDV&&d)out.push("https://ddragon.leagueoflegends.com/cdn/"+DDV+"/img/champion/"+d+".png");return out}
 function im(n){const r=RES[n];if(r==="")return "";const src=r||cands(n)[0];return src?`<img alt="" loading="lazy" src="${src}" data-n="${esc(n)}" data-i="${r?-1:0}" onerror="IE(this)" onload="IL(this)">`:""}
 function IE(el){const n=el.dataset.n,cs=cands(n),i=+el.dataset.i+1;if(i<cs.length){el.dataset.i=i;el.src=cs[i]}else{RES[n]="";el.remove()}}
 function IL(el){RES[el.dataset.n]=el.src}
 const ini=n=>n.replace(/ \(.*/,"").split(/[^A-Za-z]+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase();
-const av=(c,s)=>`<span class="av k${c.c}" style="--s:${s}px">${ini(c.n)}${im(c.n)}</span>`;
+const av=(c,s,w)=>`<span class="av ${w?"w":""} k${c.c}" style="--s:${s}px">${ini(c.n)}${im(c.n)}</span>`;
 fetch("https://ddragon.leagueoflegends.com/api/versions.json").then(r=>r.json()).then(v=>{DDV=v[0];resetImgs()}).catch(()=>{});
 
 /* ---------- HELPERS ---------- */
@@ -378,7 +383,7 @@ const chip=(c,act,cls)=>`<button class="chip k${c.c} ${c.u?"lock":""} ${cls||""}
 const bps=(def,count)=>`<span class="bps">${def.bp.map(b=>`<span class="bp ${count>=b?"hit":""}">${b}</span>`).join("")}</span>`;
 
 /* ---------- VIEWS ---------- */
-function champCard(c){return `<article class="card k${c.c}"><div class="row" style="flex-wrap:nowrap;align-items:flex-start">${av(c,56)}<div style="flex:1;min-width:0;display:grid;gap:6px"><div class="hd"><span class="nm">${esc(c.n)}</span><span class="cost">${c.c} cost${c.u?" · unlock":""}</span></div>
+function champCard(c){return `<article class="card k${c.c}"><div class="row" style="flex-wrap:nowrap;align-items:flex-start">${av(c,104,1)}<div style="flex:1;min-width:0;display:grid;gap:6px"><div class="hd"><span class="nm">${esc(c.n)}</span><span class="cost">${c.c} cost${c.u?" · unlock":""}</span></div>
 <div class="pills">${c.t.map(t=>`<span class="pill ${TR[t].k==="class"?"":"band"}">${esc(t)}</span>`).join("")}</div></div></div>
 <div class="ab"><b>${esc(c.a)}</b> · mana ${esc(c.m)}<br>${esc(c.d)}</div>${c.u?`<div class="unlock">${esc(c.u)}</div>`:""}
 <div><button class="btn sm" data-act="add-go" data-n="${esc(c.n)}">Add to builder</button></div></article>`}
@@ -419,7 +424,7 @@ function traitsHTML(){const ts=calcTraits(state.board.units);if(!ts.length)retur
   return ts.map(x=>{const nxt=x.def.bp.find(b=>b>x.count);return `<div class="tr ${x.idx<0?"off":""}"><span class="tn"><span class="rk ${x.rk}"></span>${esc(x.t)}</span><span class="tc">${x.count}${x.def.stars?"★":""}${nxt?` / ${nxt}`:""}</span>${bps(x.def,x.count)}<span></span>${x.idx>=0&&x.def.tiers[x.idx]?`<span class="stat" style="grid-column:1/-1">${esc(x.def.tiers[x.idx])}</span>`:""}</div>`}).join("")}
 function pickHTML(){const q=ui.pq.toLowerCase(),on=new Set(state.board.units.map(u=>u.n));
   const list=CHAMPS.filter(c=>(!ui.pcost||c.c===ui.pcost)&&(!ui.ptrait||c.t.includes(ui.ptrait))&&(!q||(c.n+" "+c.t.join(" ")).toLowerCase().includes(q)));
-  return COSTS.map(k=>{const g=list.filter(c=>c.c===k);return g.length?`<div class="row" style="margin-bottom:8px;align-items:flex-start"><span class="cost k${k}" style="width:44px;padding-top:5px">${k}-cost</span><div class="chips" style="flex:1">${g.map(c=>`<button class="tile ${c.u?"lock":""} ${on.has(c.n)?"onb":""}" data-act="add" data-n="${esc(c.n)}" title="${esc(c.t.join(" · "))}">${av(c,54)}<span>${esc(c.n.replace(/ \(.*/,m=>m.includes("True")?" TD":" K|DA"))}</span></button>`).join("")}</div></div>`:""}).join("")||`<p class="stat">Nothing matches.</p>`}
+  return COSTS.map(k=>{const g=list.filter(c=>c.c===k);return g.length?`<div class="row" style="margin-bottom:8px;align-items:flex-start"><span class="cost k${k}" style="width:44px;padding-top:5px">${k}-cost</span><div class="chips" style="flex:1">${g.map(c=>`<button class="tile ${c.u?"lock":""} ${on.has(c.n)?"onb":""}" data-act="add" data-n="${esc(c.n)}" title="${esc(c.t.join(" · "))}">${av(c,84,1)}<span>${esc(c.n.replace(/ \(.*/,m=>m.includes("True")?" TD":" K|DA"))}</span></button>`).join("")}</div></div>`:""}).join("")||`<p class="stat">Nothing matches.</p>`}
 function compCard(c){const ts=calcTraits(c.units).filter(x=>x.idx>=0&&x.def.k!=="solo").slice(0,5);
   const pl=(c.res||"").split(/[\s,]+/).map(Number).filter(n=>n>=1&&n<=8);const avg=pl.length?(pl.reduce((a,b)=>a+b,0)/pl.length).toFixed(2):"–";
   return `<div class="comp"><div class="row" style="justify-content:space-between"><b>${esc(c.name||"Untitled comp")}</b><span class="stat">Lv ${c.level} · avg <b>${avg}</b> over ${pl.length}</span></div>
