@@ -365,7 +365,7 @@ function cands(n){const base=n.replace(/ \(.*/,"");const k=CDK[base]||base.toLow
   if(LOCAL)out.push("img/"+fileKey(n)+".webp");
   if(CDB)out.push(cdUrl(CDB,k));
   const d=base in DDK?DDK[base]:base.replace(/[^A-Za-z]/g,"");if(DDV&&d)out.push("https://ddragon.leagueoflegends.com/cdn/"+DDV+"/img/champion/"+d+".png");return out}
-function im(n){const r=RES[n];if(r==="")return "";const src=r||cands(n)[0];return src?`<img alt="" draggable="false" loading="lazy" src="${src}" data-n="${esc(n)}" data-i="${r?-1:0}" onerror="IE(this)" onload="IL(this)">`:""}
+function im(n){const r=RES[n];if(r==="")return "";const src=r||cands(n)[0];return src?`<img alt="" draggable="false" decoding="async" src="${src}" data-n="${esc(n)}" data-i="${r?-1:0}" onerror="IE(this)" onload="IL(this)">`:""}
 function IE(el){const n=el.dataset.n,cs=cands(n),i=+el.dataset.i+1;if(i<cs.length){el.dataset.i=i;el.src=cs[i]}else{RES[n]="";el.remove()}}
 function IL(el){RES[el.dataset.n]=el.src}
 const ini=n=>n.replace(/ \(.*/,"").split(/[^A-Za-z]+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase();
