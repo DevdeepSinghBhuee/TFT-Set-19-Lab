@@ -187,6 +187,18 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .idea p{margin:0;font-size:13.5px;color:var(--mute)}
 .comp{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;background:#12142b}
 .comps{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.aS{--k:#c4cde0}.aG{--k:var(--c5)}.aP{--k:var(--c7)}
+.aug{font-size:12px;font-weight:600;border-radius:99px;padding:1px 9px;border:1px solid var(--k);color:var(--k);background:color-mix(in srgb,var(--k) 12%,transparent);white-space:nowrap}
+.acard{border-left:3px solid var(--k)}
+.augslot{background:none;border:0;padding:0}
+.augslot.empty{border:1px dashed var(--line);border-radius:99px;padding:2px 12px;font-size:12px;font-weight:600;color:var(--mute)}
+.augslot.empty:hover{border-color:var(--accent);color:var(--ink)}
+.auggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.augb{text-align:left;background:#12142b;border:1px solid var(--line);border-left:3px solid var(--k);border-radius:10px;padding:8px 10px;display:grid;gap:2px}
+.augb b{font-size:13px}
+.augb span{font-size:12px;color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.augb:hover{border-color:var(--accent);border-left-color:var(--k)}
+.augb.sel{background:rgba(255,201,77,.1);border-color:var(--accent2)}
 /* tier list */
 .trow{display:grid;grid-template-columns:58px 1fr;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;background:var(--panel)}
 .tlab{display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:19px;border:0;color:#16161f}
@@ -209,6 +221,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 <footer>Personal test notebook for TFT Set 19 (Prismatic Tour). Your comps and tier list are saved in this browser; use Export and Import to move them between phone and laptop. Champion art is Riot Games' Set 19 artwork. Champion, trait and unlock data read from the Set 19 reveal page on <a href="https://tftacademy.com/learn/new-set">TFT Academy</a> on 15 Nov 2026, the day of Riot's <a href="https://www.youtube.com/watch?v=ehNDT_IYjSQ">Dev Drop</a>. Not affiliated with or endorsed by Riot Games or TFT Academy.</footer></div>
 </div>
 
+<script src="augments.js"></script>
 <script>
 "use strict";
 /* ---------- DATA ---------- */
@@ -363,6 +376,15 @@ const TRAITS=[
 const TR=Object.fromEntries(TRAITS.map(t=>[t.n,t]));
 TRAITS.forEach(t=>t.m=CHAMPS.filter(c=>c.t.includes(t.n)));
 
+const TIERN={S:"Silver",G:"Gold",P:"Prismatic"};
+const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+const AUGS=(typeof AUG_RAW==="string"?AUG_RAW:"").split("\n").filter(Boolean).map(l=>{const [n,t,d]=l.split("~");
+  const txt=(n+". "+d).replace(/K\/DA/g,"K|DA"),has=w=>new RegExp("(^|[^A-Za-z])"+reEsc(w)+"s?(?![A-Za-z])").test(txt);
+  const traits=n==="Bodyguard Training"?[]:TRAITS.filter(x=>x.k!=="solo"&&has(x.n)).map(x=>x.n);
+  const champs=CHAMPS.filter(c=>!c.n.includes("(")&&has(c.n)).map(c=>c.n);
+  return{n,t,d,traits,champs,set:traits.length+champs.length>0}});
+const AUG=Object.fromEntries(AUGS.map(a=>[a.n,a]));
+const augPill=(n,x)=>AUG[n]?`<span class="aug a${AUG[n].t}" title="${esc(AUG[n].d)}">${esc(n)}${x||""}</span>`:"";
 const COMPONENTS=["B.F. Sword","Recurve Bow","Needlessly Large Rod","Tear of the Goddess","Chain Vest","Negatron Cloak","Giant's Belt","Sparring Gloves"];
 const RECIPES=[
 ["Deathblade","Giant Slayer","Hextech Gunblade","Spear of Shojin","Edge of Night","Bloodthirster","Sterak's Gage","Infinity Edge"],
@@ -397,7 +419,7 @@ const IDEAS=[
 /* ---------- STATE + SYNC ---------- */
 const LS="ptlab-v1";
 let state={upd:0,comps:[],tiers:{champs:{},traits:{}},board:{id:null,name:"",level:8,units:[]}};
-function norm(s){s=s||{};return{upd:+s.upd||0,comps:Array.isArray(s.comps)?s.comps:[],tiers:{champs:(s.tiers&&s.tiers.champs)||{},traits:(s.tiers&&s.tiers.traits)||{}},board:Object.assign({id:null,name:"",level:8,units:[]},s.board||{})}}
+function norm(s){s=s||{};return{upd:+s.upd||0,comps:Array.isArray(s.comps)?s.comps:[],tiers:{champs:(s.tiers&&s.tiers.champs)||{},traits:(s.tiers&&s.tiers.traits)||{}},board:Object.assign({id:null,name:"",level:8,units:[],augs:[]},s.board||{})}}
 try{const s=localStorage.getItem(LS);if(s)state=norm(JSON.parse(s))}catch(e){}
 let lastB=JSON.stringify(state.board);const undo=[],redo=[];
 function persist(){state.upd=Date.now();try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
@@ -439,10 +461,10 @@ fetch("https://ddragon.leagueoflegends.com/api/versions.json").then(r=>r.json())
 /* ---------- HELPERS ---------- */
 const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const app=document.getElementById("app");
-const ICON={champions:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',traits:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/>',unlocks:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7-2.6"/>',builder:'<path d="M7 4l5 3v6l-5 3-5-3V7zM17 9l5 3v6l-5 3-5-3v-6z"/>',"combo-lab":'<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>',"tier-list":'<path d="M4 6h16M4 12h11M4 18h7"/>',"early-game":'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/>',items:'<path d="M14 4l6 6-9 9-5 1 1-5z"/>'};
-const VIEWS=[["champions","Champions"],["traits","Traits"],["unlocks","Unlocks"],["builder","Team builder"],["combo-lab","Combo lab"],["tier-list","Tier list"],["early-game","Early game & gold"],["items","Items"]];
+const ICON={augments:'<path d="M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6-5.3-3-5.3 3 1.1-6L3.4 9.4l6-.8z"/>',champions:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',traits:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/>',unlocks:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7-2.6"/>',builder:'<path d="M7 4l5 3v6l-5 3-5-3V7zM17 9l5 3v6l-5 3-5-3v-6z"/>',"combo-lab":'<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>',"tier-list":'<path d="M4 6h16M4 12h11M4 18h7"/>',"early-game":'<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/>',items:'<path d="M14 4l6 6-9 9-5 1 1-5z"/>'};
+const VIEWS=[["champions","Champions"],["traits","Traits"],["unlocks","Unlocks"],["augments","Augments"],["builder","Team builder"],["combo-lab","Combo lab"],["tier-list","Tier list"],["early-game","Early game & gold"],["items","Items"]];
 let view="champions";
-const ui={q:"",cost:0,trait:"",compact:false,pq:"",pcost:0,ptrait:"",sel:-1,tmode:"comps",tsel:null,strat:"standard",del:null,names:true,ptab:"champs",psort:"cost",itemSel:"",gN:8,gStyle:"standard",gUnlock:"some",gMode:"random",gTrait:"",gChamp:"",gen:[]};
+const ui={q:"",cost:0,trait:"",compact:false,pq:"",pcost:0,ptrait:"",sel:-1,tmode:"comps",tsel:null,strat:"standard",del:null,aq:"",atier:"",aset:false,atrait:"",baq:"",batier:"",names:true,ptab:"champs",psort:"cost",itemSel:"",gN:8,gStyle:"standard",gUnlock:"some",gMode:"random",gTrait:"",gChamp:"",gen:[]};
 const slots=u=>u.reduce((a,x)=>a+(x.n==="Baron Nashor"?2:1),0);
 function calcTraits(units){
   const by={};
@@ -459,7 +481,7 @@ const bps=(def,count)=>`<span class="bps">${def.bp.map(b=>`<span class="bp ${cou
 /* ---------- VIEWS ---------- */
 function champCard(c){return `<article class="card ccard k${c.c}"><div class="cimg">${ini(c.n)}${im(c.n)}<span class="cbadge">${c.c} cost</span>${c.u?`<span class="clock">Unlock</span>`:""}<span class="nm">${esc(c.n)}</span></div>
 <div class="cbody"><div class="pills">${c.t.map(t=>`<span class="pill ${TR[t].k==="class"?"":"band"}">${esc(t)}</span>`).join("")}</div>
-<div class="ab"><b>${esc(c.a)}</b> · mana ${esc(c.m)}<br>${esc(c.d)}</div>${c.u?`<div class="unlock">${esc(c.u)}</div>`:""}
+<div class="ab"><b>${esc(c.a)}</b> · mana ${esc(c.m)}<br>${esc(c.d)}</div>${c.u?`<div class="unlock">${esc(c.u)}</div>`:""}${AUGS.some(a=>a.champs.includes(c.n.replace(/ \(.*/,"")))?`<div class="pills">${AUGS.filter(a=>a.champs.includes(c.n.replace(/ \(.*/,""))).map(a=>augPill(a.n)).join("")}</div>`:""}
 <div style="margin-top:auto"><button class="btn sm" data-act="add-go" data-n="${esc(c.n)}">Add to builder</button></div></div></article>`}
 function champList(onlyUnlock){
   const q=ui.q.toLowerCase();
@@ -477,12 +499,30 @@ function vUnlocks(){return `<h1>Unlockable champions</h1><p class="lead">These a
 function traitCard(t){return `<article class="card"><div class="hd"><span class="nm">${esc(t.n)}</span><span class="cost" style="color:var(--mute)">${t.k==="band"?"Band":t.k==="class"?"Class":"Solo act"}${t.stars?" · counts stars":""}</span></div>
 ${bps(t,0)}<div class="ab">${esc(t.d)}</div>
 ${t.tiers.some(Boolean)?`<ul class="tiers">${t.bp.map((b,i)=>t.tiers[i]?`<li><b>${b}</b>${esc(t.tiers[i])}</li>`:"").join("")}</ul>`:""}
-<div class="chips">${t.m.map(c=>chip(c,"add-go")).join("")}</div>
+<div class="chips">${t.m.map(c=>chip(c,"add-go")).join("")}</div>${AUGS.some(a=>a.traits.includes(t.n))?`<div class="pills">${AUGS.filter(a=>a.traits.includes(t.n)).map(a=>augPill(a.n)).join("")}</div>`:""}
 ${t.k!=="solo"?`<div><button class="btn sm" data-act="vertical" data-t="${esc(t.n)}">Load vertical in builder</button></div>`:""}</article>`}
 function vTraits(){const sec=(k,h,p)=>`<div class="costh">${h}</div><p class="lead">${p}</p><div class="cards">${TRAITS.filter(t=>t.k===k).map(traitCard).join("")}</div>`;
 return `<h1>Set 19 traits</h1><p class="lead">14 bands, 14 classes and 19 one-champion solo acts. A lock marks an unlockable member. Tap a champion to drop it into the builder.</p>
 ${sec("band","Bands","Origins. K|DA, Heartsteel, Pentakill and True Damage share names with Remix Rumble but work differently here.")}${sec("class","Classes","Stat and role traits. Percentages are not published yet.")}${sec("solo","Solo acts","Unique traits active with a single champion.")}`}
 
+function augList(){const q=ui.aq.toLowerCase();
+  const list=AUGS.filter(a=>(!ui.atier||a.t===ui.atier)&&(!ui.aset||a.set)&&(!ui.atrait||a.traits.includes(ui.atrait))&&(!q||(a.n+" "+a.d).toLowerCase().includes(q)));
+  return ["S","G","P"].map(t=>{const g=list.filter(a=>a.t===t);return g.length?`<div class="costh a${t}"><span class="dot"></span>${TIERN[t]} · ${g.length}</div><div class="cards">${g.map(a=>`<article class="card acard a${a.t}"><div class="hd"><span class="nm">${esc(a.n)}</span><span class="cost">${TIERN[a.t]}</span></div><div class="ab">${esc(a.d)}</div>
+  ${a.set?`<div class="chips">${a.traits.map(x=>`<span class="pill band">${esc(x)}</span>`).join("")}${a.champs.map(n=>chip(CH[n],"add-go")).join("")}</div>`:""}
+  <div style="margin-top:auto"><button class="btn sm ${(state.board.augs||[]).includes(a.n)?"on":""}" data-act="aug" data-a="${esc(a.n)}">${(state.board.augs||[]).includes(a.n)?"On your board":"Add to builder"}</button></div></article>`).join("")}</div>`:""}).join("")||`<p class="lead">No augment matches those filters.</p>`}
+function vAugs(){return `<h1>Set 19 augments</h1><p class="lead">${AUGS.length} augments from the reveal: ${AUGS.filter(a=>a.t==="S").length} silver, ${AUGS.filter(a=>a.t==="G").length} gold, ${AUGS.filter(a=>a.t==="P").length} prismatic. ${AUGS.filter(a=>a.set).length} are tied to a Set 19 trait or champion.</p>
+<p class="note">Values are not published yet, and Riot can still add or cut augments before launch. Text is a shortened summary; + and ++ versions are folded into the base augment.</p>
+<div class="row filters"><input type="text" id="aq" placeholder="Search augments" value="${esc(ui.aq)}" aria-label="Search augments">
+${[["","All"],["S","Silver"],["G","Gold"],["P","Prismatic"]].map(([k,l])=>`<button class="btn sm ${ui.atier===k?"on":""}" data-act="atier" data-k="${k}">${l}</button>`).join("")}
+<button class="btn sm ${ui.aset?"on":""}" data-act="aset">Trait and champion augments only</button>
+<select id="atrait" aria-label="Filter augments by trait"><option value="">Any trait</option>${TRAITS.filter(t=>AUGS.some(a=>a.traits.includes(t.n))).map(t=>`<option ${ui.atrait===t.n?"selected":""}>${esc(t.n)}</option>`).join("")}</select></div>
+<div id="alist">${augList()}</div>`}
+function augPick(){const b=state.board,q=ui.baq.toLowerCase(),mine=new Set(b.augs||[]);
+  const tr=new Set(calcTraits(b.units).map(x=>x.t)),cs=new Set(b.units.map(u=>u.n.replace(/ \(.*/,"")));
+  const list=AUGS.filter(a=>(!ui.batier||a.t===ui.batier)&&(!q||(a.n+" "+a.d).toLowerCase().includes(q)));
+  const fit=list.filter(a=>a.traits.some(t=>tr.has(t))||a.champs.some(c=>cs.has(c))),rest=list.filter(a=>!fit.includes(a));
+  const btn=a=>`<button class="augb a${a.t} ${mine.has(a.n)?"sel":""}" data-act="aug" data-a="${esc(a.n)}" title="${esc(a.d)}"><b>${esc(a.n)}</b><span>${esc(a.d)}</span></button>`;
+  return (fit.length?`<h3>Fits this board</h3><div class="auggrid">${fit.map(btn).join("")}</div>`:"")+`<h3 style="margin-top:${fit.length?14:0}px">All augments</h3><div class="auggrid">${rest.map(btn).join("")}</div>`}
 function hexHTML(){const by={};state.board.units.forEach((u,i)=>by[u.h]=i);let h="";
   for(let r=0;r<4;r++){h+=`<div class="hrow ${r%2?"off":""}">`;for(let c=0;c<7;c++){const x=r*7+c,i=by[x];
     if(i===undefined)h+=`<div class="hexw"><button class="hex" data-act="hex" data-h="${x}" aria-label="Empty hex"></button></div>`;
@@ -498,6 +538,7 @@ function editorHTML(){const u=state.board.units[ui.sel];if(!u)return `<p class="
 function traitsHTML(){const ts=calcTraits(state.board.units);if(!ts.length)return `<p class="stat">Traits appear here as you place champions.</p>`;
   return ts.map(x=>{const nxt=x.def.bp.find(b=>b>x.count);return `<div class="tr ${x.idx<0?"off":""}"><span class="tn"><span class="rk ${x.rk}"></span>${esc(x.t)}</span><span class="tc">${x.count}${x.def.stars?"★":""}${nxt?` / ${nxt}`:""}</span>${bps(x.def,x.count)}<span></span>${x.idx>=0&&x.def.tiers[x.idx]?`<span class="stat" style="grid-column:1/-1">${esc(x.def.tiers[x.idx])}</span>`:""}</div>`}).join("")}
 function pickHTML(){
+  if(ui.ptab==="augs")return augPick();
   if(ui.ptab==="items"){const g=(lab,arr)=>`<div class="pgroup"><span>${lab}</span><div class="pgrid">${arr.map(n=>`<button class="itm ${ui.itemSel===n?"sel":""}" data-act="item" data-item="${esc(n)}">${itIcon(n,44)}<span>${esc(isEmb(n)?n.slice(8):n)}</span></button>`).join("")}</div></div>`;
     return g("Components",COMPONENTS)+g("Completed",ITEMS)+g("Emblems",EMBLEMS)+`<p class="stat">Emblems add +1 to that trait. Set 19 emblem art and recipes are not published yet, so emblems show initials.</p>`}
   const q=ui.pq.toLowerCase(),on=new Set(state.board.units.map(u=>u.n));
@@ -515,6 +556,7 @@ function compCard(c){const ts=calcTraits(c.units).filter(x=>x.idx>=0&&x.def.k!==
   return `<div class="comp"><div class="row" style="justify-content:space-between"><b>${esc(c.name||"Untitled comp")}</b><span class="stat">Lv ${c.level} · avg <b>${avg}</b> over ${pl.length}</span></div>
   <div class="pills">${ts.map(x=>`<span class="pill band">${x.count}${x.def.stars?"★":""} ${esc(x.t)}</span>`).join("")}</div>
   <div class="chips">${c.units.map(u=>CH[u.n]?`<span class="chip k${CH[u.n].c}">${av(CH[u.n],22)}${esc(u.n)}${u.s>1?" "+"★".repeat(u.s):""}</span>`:"").join("")}</div>
+  ${(c.augs||[]).length?`<div class="pills">${c.augs.map(a=>augPill(a)).join("")}</div>`:""}
   <div class="row"><label class="stat" for="res-${c.id}">Placements</label><input type="text" id="res-${c.id}" data-res="${c.id}" value="${esc(c.res||"")}" placeholder="e.g. 2 5 1" style="flex:1"></div>
   <div class="row"><span class="stat">Log a game</span>${[1,2,3,4,5,6,7,8].map(n=>`<button class="btn sm" data-act="place" data-id="${c.id}" data-p="${n}" aria-label="Placed ${n}">${n}</button>`).join("")}${pl.length?`<button class="btn sm" data-act="unplace" data-id="${c.id}">Undo</button>`:""}</div>
   <textarea data-notes="${c.id}" placeholder="What happened: items, augments, unlock timing, what beat you" aria-label="Notes">${esc(c.notes||"")}</textarea>
@@ -529,14 +571,16 @@ function vBuilder(){const b=state.board,n=slots(b.units),gold=b.units.reduce((a,
   <div class="row tb"><button class="btn sm" data-act="undo" ${undo.length?"":"disabled"}>Undo</button><button class="btn sm" data-act="redo" ${redo.length?"":"disabled"}>Redo</button><button class="btn sm" data-act="clear">Clear</button><button class="btn sm ${ui.names?"on":""}" data-act="names">Names</button><span class="grow"></span>
     ${b.id?`<button class="btn sm" data-act="saveas">Save as new</button>`:""}<button class="btn sm pri" data-act="save">${b.id?"Update saved comp":"Save comp"}</button></div>
   <div class="stage"><div class="board">${hexHTML()}</div><p class="rowlab">Top row is your front line</p></div>
+  <div class="row" style="margin-top:10px"><span class="stat">Augments</span>${[0,1,2].map(k=>(b.augs||[])[k]?`<button class="augslot" data-act="aug" data-a="${esc(b.augs[k])}" title="Remove">${augPill(b.augs[k]," ×")}</button>`:`<button class="augslot empty" data-act="ptab" data-k="augs">+ Add augment</button>`).join("")}</div>
   <div class="row" style="justify-content:space-between;margin-top:10px"><span class="stat ${n>b.level?"over":""}">Team size <b>${n} / ${b.level}</b>${n>b.level?" · over cap unless you hold a slot bonus":""}</span><span class="stat">Board value <b>${gold}g</b></span></div>
   ${editorHTML()}
 </section>
 <aside class="panel"><h2>Traits</h2>${traitsHTML()}<h2 style="margin-top:18px">Components needed</h2>${need.length?`<div class="chips">${need.map(([c,k])=>`<span class="chip">${itIcon(c,22)}${k}× ${esc(c)}</span>`).join("")}</div>`:`<p class="stat" style="margin:0">Equip completed items to see what to pick up.</p>`}</aside>
-<section class="panel wide"><div class="row tabs"><button class="tab ${ui.ptab==="champs"?"on":""}" data-act="ptab" data-k="champs">Champions</button><button class="tab ${ui.ptab==="items"?"on":""}" data-act="ptab" data-k="items">Items</button></div>
+<section class="panel wide"><div class="row tabs"><button class="tab ${ui.ptab==="champs"?"on":""}" data-act="ptab" data-k="champs">Champions</button><button class="tab ${ui.ptab==="items"?"on":""}" data-act="ptab" data-k="items">Items</button><button class="tab ${ui.ptab==="augs"?"on":""}" data-act="ptab" data-k="augs">Augments</button></div>
   ${ui.ptab==="champs"?`<div class="row filters"><input type="text" id="pq" placeholder="Search champions or traits" value="${esc(ui.pq)}" aria-label="Search champions to add">
   ${[["cost","Cost"],["name","Name"],["origin","Origin"],["class","Class"]].map(([k,l])=>`<button class="btn sm ${ui.psort===k?"on":""}" data-act="psort" data-k="${k}">${l}</button>`).join("")}
-  <select id="ptrait" aria-label="Filter picker by trait"><option value="">Any trait</option>${TRAITS.map(t=>`<option ${ui.ptrait===t.n?"selected":""}>${esc(t.n)}</option>`).join("")}</select></div>`:`<p class="stat" style="margin:0 0 12px">${ui.sel>=0&&b.units[ui.sel]?`Tap an item to give it to <b>${esc(b.units[ui.sel].n)}</b>, or drag it onto any unit.`:ui.itemSel?`<b>${esc(ui.itemSel)}</b> is armed: tap a unit on the board to equip it.`:"Drag an item onto a unit, or tap an item and then tap a unit."}</p>`}
+  <select id="ptrait" aria-label="Filter picker by trait"><option value="">Any trait</option>${TRAITS.map(t=>`<option ${ui.ptrait===t.n?"selected":""}>${esc(t.n)}</option>`).join("")}</select></div>`:ui.ptab==="augs"?`<div class="row filters"><input type="text" id="baq" placeholder="Search augments" value="${esc(ui.baq)}" aria-label="Search augments to add">
+  ${[["","All"],["S","Silver"],["G","Gold"],["P","Prismatic"]].map(([k,l])=>`<button class="btn sm ${ui.batier===k?"on":""}" data-act="batier" data-k="${k}">${l}</button>`).join("")}<span class="stat">Pick up to 3. Tap again to remove.</span></div>`:`<p class="stat" style="margin:0 0 12px">${ui.sel>=0&&b.units[ui.sel]?`Tap an item to give it to <b>${esc(b.units[ui.sel].n)}</b>, or drag it onto any unit.`:ui.itemSel?`<b>${esc(ui.itemSel)}</b> is armed: tap a unit on the board to equip it.`:"Drag an item onto a unit, or tap an item and then tap a unit."}</p>`}
   <div id="pick">${pickHTML()}</div></section>
 <section class="panel wide"><h2>Saved comps · ${state.comps.length}</h2>${state.comps.length?`<div class="comps">${state.comps.map(compCard).join("")}</div>`:`<p class="stat">Nothing saved yet. Load an idea below, adjust it, and save it under your own name.</p>`}</section>
 <section class="panel wide"><h2>Test queue</h2><p class="stat" style="margin:0 0 6px">Starting points built from trait overlap. None of these has been played; each one is a question to answer.</p>
@@ -679,12 +723,12 @@ ${COMPONENTS.map((c,i)=>`<tr><td><span class="rc">${itIcon(c,26)}${esc(c)}</span
 /* ---------- RENDER + EVENTS ---------- */
 function render(){
   document.getElementById("nav").innerHTML=VIEWS.map(([k,l])=>`<a href="#${k}" class="${view===k?"on":""}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>${l}</a>`).join("");
-  app.innerHTML={champions:vChampions,unlocks:vUnlocks,traits:vTraits,builder:vBuilder,"combo-lab":vCombo,"tier-list":vTiers,"early-game":vEarly,items:vItems}[view]();
+  app.innerHTML={champions:vChampions,unlocks:vUnlocks,traits:vTraits,augments:vAugs,builder:vBuilder,"combo-lab":vCombo,"tier-list":vTiers,"early-game":vEarly,items:vItems}[view]();
 }
 function route(){const h=location.hash.slice(1);view=VIEWS.some(v=>v[0]===h)?h:"champions";ui.sel=-1;render();window.scrollTo(0,0)}
 function freeHex(){const used=new Set(state.board.units.map(u=>u.h));for(let i=0;i<28;i++)if(!used.has(i))return i;return -1}
 function addChamp(n){const h=freeHex();if(h<0||!CH[n])return;state.board.units.push({n,h,s:1,it:[]});ui.sel=state.board.units.length-1;save()}
-function loadUnits(names,name){const b=state.board;b.id=null;b.name=name;b.units=names.filter(n=>CH[n]).slice(0,28).map((n,i)=>({n,h:i,s:1,it:[]}));b.level=Math.min(10,Math.max(b.level,slots(b.units)));ui.sel=-1;save()}
+function loadUnits(names,name){const b=state.board;b.id=null;b.name=name;b.augs=[];b.units=names.filter(n=>CH[n]).slice(0,28).map((n,i)=>({n,h:i,s:1,it:[]}));b.level=Math.min(10,Math.max(b.level,slots(b.units)));ui.sel=-1;save()}
 function go(v){if(location.hash.slice(1)===v){view=v;render()}else location.hash=v}
 /* drag and drop on the board (mouse and touch via Pointer Events) */
 let drag=null,noClick=false;
@@ -722,6 +766,10 @@ document.addEventListener("click",e=>{if(noClick)return;const el=e.target.closes
     case "vertical":{const t=TR[el.dataset.t];loadUnits([...t.m].sort((x,y)=>(!!x.u-!!y.u)||x.c-y.c).map(c=>c.n),t.n+" vertical");go("builder");return}
     case "opener":{const t=TR[el.dataset.t];loadUnits(t.m.filter(c=>c.c<=2&&!c.u).map(c=>c.n),t.n+" opener");b.level=Math.max(4,slots(b.units));save();go("builder");return}
     case "idea":{const x=IDEAS[+el.dataset.i];loadUnits(x[2],x[0]);window.scrollTo(0,0);break}
+    case "aug":{b.augs=b.augs||[];const a=el.dataset.a,i=b.augs.indexOf(a);if(i>=0)b.augs.splice(i,1);else if(b.augs.length<3)b.augs.push(a);save();break}
+    case "atier":ui.atier=el.dataset.k;break;
+    case "aset":ui.aset=!ui.aset;break;
+    case "batier":ui.batier=el.dataset.k;break;
     case "undo":timeTravel(undo,redo);break;
     case "redo":timeTravel(redo,undo);break;
     case "names":ui.names=!ui.names;break;
@@ -735,10 +783,10 @@ document.addEventListener("click",e=>{if(noClick)return;const el=e.target.closes
     case "star":if(b.units[ui.sel]){b.units[ui.sel].s=+el.dataset.s;save()}break;
     case "remove":if(b.units[ui.sel]){b.units.splice(ui.sel,1);ui.sel=-1;save()}break;
     case "lvl":b.level=Math.max(1,Math.min(11,b.level+ +el.dataset.d));save();break;
-    case "clear":b.units=[];b.id=null;b.name="";ui.sel=-1;save();break;
-    case "save":case "saveas":{if(!b.units.length)break;const snap={name:b.name||"Untitled comp",level:b.level,units:JSON.parse(JSON.stringify(b.units))};
+    case "clear":b.units=[];b.augs=[];b.id=null;b.name="";ui.sel=-1;save();break;
+    case "save":case "saveas":{if(!b.units.length)break;const snap={name:b.name||"Untitled comp",level:b.level,units:JSON.parse(JSON.stringify(b.units)),augs:[...(b.augs||[])]};
       const ex=a==="save"&&state.comps.find(c=>c.id===b.id);if(ex)Object.assign(ex,snap);else{b.id="c"+Date.now().toString(36);state.comps.unshift(Object.assign({id:b.id,tier:"",res:"",notes:""},snap))}save();break}
-    case "load":{const c=state.comps.find(c=>c.id===el.dataset.id);if(c){b.id=c.id;b.name=c.name;b.level=c.level;b.units=JSON.parse(JSON.stringify(c.units));ui.sel=-1;save();if(view!=="builder"){go("builder");return}window.scrollTo(0,0)}break}
+    case "load":{const c=state.comps.find(c=>c.id===el.dataset.id);if(c){b.id=c.id;b.name=c.name;b.level=c.level;b.units=JSON.parse(JSON.stringify(c.units));b.augs=[...(c.augs||[])];ui.sel=-1;save();if(view!=="builder"){go("builder");return}window.scrollTo(0,0)}break}
     case "ctier":{const c=state.comps.find(c=>c.id===el.dataset.id);if(c){c.tier=c.tier===el.dataset.t?"":el.dataset.t;save()}break}
     case "del":if(ui.del===el.dataset.id){state.comps=state.comps.filter(c=>c.id!==ui.del);if(b.id===ui.del)b.id=null;ui.del=null;save()}else ui.del=el.dataset.id;break;
     case "tmode":ui.tmode=el.dataset.m;ui.tsel=null;break;
@@ -757,12 +805,15 @@ document.addEventListener("click",e=>{if(noClick)return;const el=e.target.closes
   render()});
 document.addEventListener("input",e=>{const t=e.target;
   if(t.id==="q"){ui.q=t.value;document.getElementById("list").innerHTML=champList(view==="unlocks")}
+  else if(t.id==="aq"){ui.aq=t.value;document.getElementById("alist").innerHTML=augList()}
+  else if(t.id==="baq"){ui.baq=t.value;document.getElementById("pick").innerHTML=pickHTML()}
   else if(t.id==="pq"){ui.pq=t.value;document.getElementById("pick").innerHTML=pickHTML()}
   else if(t.id==="bname"){state.board.name=t.value}});
 document.addEventListener("change",e=>{const t=e.target;
   if(t.id==="imp"){const f=t.files[0];if(f)f.text().then(s=>{state=norm(JSON.parse(s));save();render()}).catch(()=>{});t.value="";return}
   if(["gStyle","gUnlock","gMode","gTrait","gChamp"].includes(t.id)){ui[t.id]=t.value;return}
   if(t.id==="gN"){ui.gN=+t.value;return}
+  if(t.id==="atrait"){ui.atrait=t.value;render();return}
   if(t.id==="ftrait"){ui.trait=t.value;render()}
   else if(t.id==="ptrait"){ui.ptrait=t.value;render()}
   else if(t.id==="bname"){save()}
