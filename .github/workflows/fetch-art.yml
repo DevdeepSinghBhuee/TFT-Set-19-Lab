@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['art/**', .github/workflows/fetch-art.yml]
+    paths: ['art/**', 'augments.js', .github/workflows/fetch-art.yml]
 permissions:
   contents: write
 jobs:
@@ -28,6 +28,8 @@ jobs:
           echo "downloaded=$ok failed=$bad"
       - name: Download item icons
         run: python3 art/fetch_items.py
+      - name: Download Set 19 augment, emblem and trait icons
+        run: python3 art/fetch_cdragon.py
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"

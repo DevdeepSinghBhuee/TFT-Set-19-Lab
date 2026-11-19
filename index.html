@@ -199,6 +199,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .augb span{font-size:12px;color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .augb:hover{border-color:var(--accent);border-left-color:var(--k)}
 .augb.sel{background:rgba(255,201,77,.1);border-color:var(--accent2)}
+.augi{width:var(--s);height:var(--s);border-radius:6px;vertical-align:middle;flex:none}
+.aug .augi{margin:0 4px 0 -4px;border-radius:50%}
+.tri{width:var(--s);height:var(--s);vertical-align:-3px;margin-right:4px;filter:brightness(1.6)}
+.quests b{min-width:96px;margin-right:6px}
 /* tier list */
 .trow{display:grid;grid-template-columns:58px 1fr;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;background:var(--panel)}
 .tlab{display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:19px;border:0;color:#16161f}
@@ -218,177 +222,85 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   <div class="sidebtm"><button class="btn sm" data-act="export">Export data</button><button class="btn sm" data-act="import">Import data</button><input type="file" id="imp" accept="application/json,.json" hidden></div>
 </aside>
 <div><main id="app"></main>
-<footer>Personal test notebook for TFT Set 19 (Prismatic Tour). Your comps and tier list are saved in this browser; use Export and Import to move them between phone and laptop. Champion art is Riot Games' Set 19 artwork. Champion, trait and unlock data read from the Set 19 reveal page on <a href="https://tftacademy.com/learn/new-set">TFT Academy</a> on 15 Nov 2026 and updated on 16 Nov from <a href="https://blitz.gg/tft/articles/tft-set-19-champions-traits-unlocks">Blitz</a> and <a href="https://www.invenglobal.com/articles/28609/music-changes-with-your-board-tft-set-19-prismatic-tour">Inven Global</a> coverage of Riot's <a href="https://www.youtube.com/watch?v=ehNDT_IYjSQ">Dev Drop</a>. Not affiliated with or endorsed by Riot Games or TFT Academy.</footer></div>
+<footer>Personal test notebook for TFT Set 19 (Prismatic Tour). Your comps and tier list are saved in this browser; use Export and Import to move them between phone and laptop. Champion art is Riot Games' Set 19 artwork. Champion, trait and augment data is from the Set 19 PBE build as listed on <a href="https://tactics.tools/info/set-update">tactics.tools</a> (19 Nov 2026); emblem recipes from <a href="https://mobalytics.gg/tft/set19/items">Mobalytics</a>; item changes from <a href="https://tftips.app/en/patches/19.1">tftips.app</a>. Not affiliated with or endorsed by Riot Games or TFT Academy.</footer></div>
 </div>
 
+<script src="units.js"></script>
 <script src="augments.js"></script>
 <script>
 "use strict";
 /* ---------- DATA ---------- */
-const RAW=`Elise~1~Ionic Spark,Frontman~Cocoon~60/120~Turns into a spider for bonus Health, then stuns and damages the enemy that hurt her most. Later casts heal first.~
-Gnar~1~Pentakill,Trickshot~Hard Rock~0/3~No cast. Every 3rd attack is a rock that hits harder and speeds him up.~
-Katarina~1~Classical,Slayer~Blade Sonata~0/40~Spins for magic damage around her, then bursts her target. Captivates everyone hit.~
-Kayn~1~Heartsteel,Slayer~Shadow of the Night~0/30~Dashes through a 2-hex line. Heartsteel upgrade: becomes Shadow Assassin at low Health for bonus magic damage.~
-Kennen~1~True Damage,Bodyguard~Electric Shock~0/0~No cast. Takes reduced damage and zaps adjacent enemies every second.~
-Kobuko~1~Hyperpop,Frontman~Pump It Up!~40/90~Heals over time. Your strongest Kobuko gains Health from Hyperpop Hype.~X-star Ziggs holding X item
-Lillia~1~K|DA,Bodyguard~We Love You K|DA~40/100~Heals, hits nearby enemies and weakens the damage they deal.~
-Neeko~1~K|DA,Encore,Prodigy~K|DA Fan Club~0/40~Confetti streams at the target. Each kill permanently adds Ability Power.~
-Olaf~1~Pentakill,Rock,Juggernaut~Ragnarok 'n' Roll~0/0~Heals on attack. On death, revives at full Health with Attack Speed, then bleeds out.~
-Sett~1~Heartsteel,Frontman,Collab~Live My Life~30/90~Heals and punches twice; gets extra value from max Health. Heartsteel upgrade adds periodic healing.~
-Taric~1~Beach Pop,Juggernaut~Good Reverberations~30/90~Shields himself and one damaged ally nearby.~
-Varus~1~Rock,Encore~One Thousand Arrows~30/70~Arrow hail on the target and neighbours that slows their Attack Speed.~
-Yunara~1~Ionic Spark,Swiftstriker~Cultivation of Teen Spirit~40/80~After casting, every attack fires a bonus physical orb for the rest of combat.~
-Ziggs~1~Hyperpop,Arcanist,Swiftstriker~GlitterBOM3S~0/50~Attacks deal bonus magic damage. Bomb splashes the target and neighbours.~
-Zoe~1~Beach Pop,Arcanist~Paddle Ball~15/90~Long skillshot at the farthest enemy. Ricochets with leftover damage on a kill.~
-Annie~2~Ionic Spark,Arcanist,Juggernaut~We DID Start the Fire~20/80~Shields herself and burns a cone, applying Burn and Wound for 4 seconds.~
-Ashe~2~Beach Pop,Swiftstriker~Feelin' Shot Shot Shot~20/60~Her next attacks become fast arrow flurries.~A Beach Pop champion holding X items
-Camille~2~Rock,Slayer~Hookshot Through the Heart~0/40~Cone kick. Hookshots to a new target whenever her target dies.~
-Ezreal~2~Heartsteel,Encore~Bite the Bullet~0/35~Marks then detonates for 1-hex splash. Heartsteel upgrade: bigger blast, every 3rd cast hits 2 hexes.~
-Gragas~2~K|DA,Juggernaut,Collab~Fan Clubbing~30/80~Regenerates and adds magic damage to attacks. Stronger for each 3-star K|DA ally.~
-Illaoi~2~Illbeats,Frontman~Smash-Hit Royalties~30/90~Heals and slams a line. Casts build Fame (more with banked gold); at the threshold she goes Platinum and drops gold on cast.~
-Jax~2~EDM,Bodyguard,Swiftstriker~Instant Crush~0/30~Bash that heals him and stacks Attack Speed all fight. EDM upgrade: beams through nearby enemies.~
-Karthus~2~Pentakill,Arcanist,Collab~Requiem~10/50~Delayed single-target nuke that recasts at reduced power if it kills.~
-Lucian~2~Jazz,Hitmaker,Encore~Relentless Pursuit~0/20~Dashes and fires 2 shots.~
-Lulu~2~Hyperpop,Choreographer~Hype Girl~0/50~Alternates an Attack Speed buff with a Health buff that damages around the ally.~Hyperpop champions cast X times with the trait active
-Lux~2~Ionic Spark,Prodigy~Lux Lux Beam!~0/40~Split beam on two enemies. Refunds Mana per kill.~
-Nasus~2~Classical,Bodyguard~Patron of the Arts~25/75~Zone that heals him and allies, damages enemies and Captivates those with less max Health.~A Classical champion holding X items
-Qiyana~2~True Damage,Renegade~Shuffled Playlist~0/40~Line dash. Her rotating ring adds damage, healing, mana refund or gold.~
-Renata Glasc~2~Classical,Choreographer~Hostile Measures~0/45~Stacking poison that spreads to unpoisoned enemies and Captivates.~X items on a Classical or Choreographer champion
-Renekton~2~Beach Pop,Frontman~Crocodile Rock~60/110~Grows (max Health for the fight) and spins on adjacent enemies.~
-Samira~2~Classical,Renegade,Trickshot~Bullets N' Roses~0/60~Bullet volley. Her critical strikes Captivate.~X items on a Classical, Renegade or Trickshot champion
-Seraphine~2~Indie~Livestream of Note~0/50~Channelled magic notes. Upgrades to Rising Star, then Superstar, as you 3-star champions.~Reroll X times before the Stage 2 carousel
-Tristana~2~Hyperpop,Hitmaker~Head Banger~0/55~Bombs nearby enemies and detonates them.~Get X kills with Hyperpop active
-Amumu~3~Emo~So Sad and Lorn~60/120~Heals and stuns the nearest enemies with bandages.~
-Bard~3~Jazz,Swiftstriker~Come Chime with Me~20/80~Casts generate XP through his Horn. Meep wave pierces enemies.~
-Braum~3~Illbeats,Juggernaut~Percussive Slam~75/135~Shield, then an area stun around him.~
-Briar~3~Ionic Spark,Slayer,Collab~Snack Attack~0/30~Heals, dives the farthest enemy in range, then frenzies with empowered attacks.~
-Draven~3~Illbeats,Trickshot~You Spin Me Round (Like An Axe)~0/60~Spinning record plus a lingering damage vortex.~
-Ekko~3~True Damage,Juggernaut,Prodigy~Turn Back Time~30/120~Delays part of the damage he takes. Cast erases it, heals and hits the target.~
-Evelynn~3~K|DA,Renegade~Villainous~0/40~Opens behind her target and is untargetable for a while. Semicircle burst that ignores some Magic Resist.~Field X K|DA or Renegade champions
-Galio~3~Jazz,Frontman~Blow Up a Storm~50/120~Shield, then stuns the enemy that hurt him most.~Have X of Bodyguard, Juggernaut or Frontman active
-K'Sante~3~Heartsteel,Bodyguard~In Your House!~70/140~Shield, charge-stun, slam and taunt. Heartsteel upgrade adds resists and on-hit damage.~
-Kai'Sa~3~K|DA,Trickshot~Make it Rain~0/30~Missiles every few attacks. Cast grants Attack Speed for the fight.~
-Malzahar~3~Composer,Prodigy~Forbidden Cacophony~0/50~Beam plus 4 explosions that shred Magic Resist. He is the key to unlocking Baron.~
-Senna~3~True Damage,Hitmaker~Reverberation Devastation~0/20~Marks a target, then detonates the mark for stacking Damage Amp.~
-Swain~3~Rock,Arcanist,Frontman~A Cruel Devil's Thesis~70/120~Demon form: max Health and a damage aura. Recasts heal and ramp.~
-Syndra~3~Beach Pop,Choreographer~Serve's Up~0/30~Volleyball spike that bounces to the least-itemised enemy behind.~X unique star levels of Beach Pop or Choreographer
-Tibbers~3~Ionic Spark,Bodyguard~Girl's Best Friend~40/100~Enrages at low Health or when Annie dies. Cast shields him.~X-star Annie holding X item
-Viego~3~Pentakill,Choreographer,Slayer~Singled Out~0/40~Swords impale the target. Gains a permanent sword per set of takedowns.~
-Ahri~4~K|DA,Choreographer~Burn it Down~0/30~Stacks fox-fires, then launches them all. Her flow state adds a heart and splash.~
-Alistar~4~Country~Blue Cow Crying in the Rain~55/155~Big missing-Health heal, then an area knock-up.~A Chain Vest equipped on a Caster or Marksman
-Alune~4~Heartsteel,Manager,Prodigy~Spotlight~20/65~Spotlight nuke that splits and overflows on kill. Heartsteel upgrade adds extra blasts.~X unique Heartsteel or Prodigy champions
-Aurora~4~Ionic Spark,Renegade~Between Worlds Apart~0/60~Blinks out, pierces the best line (most damage to the two tankiest), blinks back.~
-Garen~4~Synthwave,Choreographer~Sword of Truth~30/100~Heals, then a wave that damages and weakens.~
-Graves~4~Beach Pop,Renegade~Left Hand Free~0/30~Dashing cone-shot attacks. Kills extend the spree.~
-Jhin~4~Classical,Encore~String Quartet~4/4~Attack Speed converts to AD. Every 4th shot is empowered; later he gains infinite range and pierce. Captivates.~
-Jinx~4~Ionic Spark,Hitmaker~Boom Boom POW POW~30/90~Rapid missile barrage on nearby enemies.~X items on an Ionic Spark or Hitmaker champion
-Kayle~4~Pentakill,Swiftstriker~Stairway to Hell~0/50~Bonus magic on-hit. Cast gives infinite range and Attack Speed, ending in a sword rain.~X unique Pentakill or Swiftstriker champions
-Leona~4~K|DA,Bodyguard,Manager~Coordinated Light Show~40/100~Shield plus light beams that shred Magic Resist.~
-Locke~4~Rock,Swiftstriker~Pursue Sin (The Soul Nail Song)~0/30~Marks ramp his damage. Throws 3 nails at the farthest enemy and teleports to it.~
-Mel~4~R&B,Arcanist~Chain of Blues~0/40~Missiles stack Blues; stacked enemies take more from the ability.~
-Shyvana~4~Ionic Spark,Frontman~Dragon Force~30/100~Transforms at a Health threshold for Health, Attack Speed and splash 3rd hits. Cast shields.~
-Thresh~4~Classical,Frontman~Dark Passage (Reprise)~40/100~Periodically Captivates the farthest enemy. Heals and drains nearby max Health.~Enemies spend X seconds Captivated by Classical
-Vayne~4~Rock,Trickshot~Darkest Hour~0/50~Tumbles with Durability. Empowered attacks deal % max Health damage.~Field Rock for X combats
-Wukong~4~Gu Feng~The Tricks of the Many Mythical Tricksters~40/100~Heals. Clones steal Armor and Magic Resist in a 2-hex ring and bring them back.~Allies deal X damage while fielding Xayah
-Xayah~4~Gu Feng,Hitmaker~Feathers Flying Like Leaves on the Wind~0/60~Feather strikes that shred Armor. Fielding her drives every Gu Feng unlock.~
-Yasuo~4~True Damage,Slayer~Last Breath~0/30~Line thrust. Every 3rd cast knocks up and slams for area damage.~X star levels of True Damage and Slayer champions
-Yone~4~Heartsteel,Slayer~Two Sides~0/50~Scales with AD or AP, whichever is higher. Multi-strike plus finisher; Heartsteel upgrade adds strikes and Armor pen.~
-Yorick~4~Pentakill,Juggernaut~Danse Macabre~50/100~Heals and lays a damage zone that ends with a slow.~
-Yuumi~4~Illbeats,Encore,Collab~Girl, Put Your Records On (Your Head)~0/20~Stacking discs shred Magic Resist, then topple for burst and splash.~
-Zac~4~Beach Pop,Juggernaut~Cannonball!~60/120~Charges with Durability and healing, then leaps for an area knock-up.~X unique Beach Pop or Juggernaut champions
-Akali (True Damage)~5~True Damage,Freestyle~Killin' like Domino~0/50~Untargetable slash combo (extra vs tanks) and a bomb. B-Side: takedowns restore player Health.~Earn X True Damage Bling without K|DA Akali unlocked
-Akali (K|DA)~5~K|DA~Sk8er Gurl~0/45~Skates a line, painting enemies Vulnerable. Every 3rd cast ignites the paint.~X unique star levels of K|DA without True Damage Akali unlocked
-Aphelios~5~Heartsteel~BANG BANG BANGERS~40/180~Stacks Chakrams for on-hit damage, then AD and infinite range. Splitting bolts on cast.~X-star Alune or Yone
-Dr. Mundo~5~Record Mogul,Manager~Big Business~20/80~Pumped Up above a Health threshold. Heals and pulses area damage.~
-Gwen~5~Ionic Spark,Melodic Heart~Glimmer in the Night~0/100~Cone on-hit attacks and dashes between targets. Giant scissors snip a full row.~Ionic Spark fans cheer X times
-Janna~5~Gu Feng,Windblessed,Prodigy~Hymn of the Heaven's Gale~0/45~Dragons at nearby enemies. After several casts, a board-wide gale.~Earn X interest while fielding Xayah
-Lee Sin~5~Gu Feng~Celestial Combo To Impress The Heavens~0/50~Combo grows each cast: slam, knock-up spin, then a true-damage punch on marked targets.~Deal X player damage while fielding Xayah
-Miss Fortune~5~8-Bit,Hitmaker~Pinball Wizard~0/50~Bouncing pinball with a damage floor.~
-Mordekaiser~5~Pentakill~Hand of Doom~0/60~Giant claw line that pulls. Then Omnivamp, range and area slams for the fight.~X unique star levels of Pentakill
-Nidalee~5~Mariachi,Choreographer~Pounce Party | Dance of Life~20/45~Cougar form chains ramping pounces. Human form heals and throws a javelin with flower splash.~
-Nunu & Willump~5~Disco,Frontman~It's the Time to Disco!~20/75~Rolls a growing Disco Ball through enemies. Casts speed it up.~
-Pyke~5~Rock,Renegade~Execute Gon' Give it to Ya~0/30~X-shaped strike that executes. Auto-casts on any enemy below the threshold.~Have X or more gold at the end of combat
-Rell~5~R&B,Beat Master~Rhythm Blaster | Metal Pony Club~30/100~Unmounted: shield and 3 damaging speakers. Mounted: crowd slam.~
-Taliyah~5~Beach Pop,Encore~Crowd Surfing~0/40~Rock volleys. Every few casts she surfs a line for % max Health damage and a knock-up.~A champion of each cost starts in a Beach Pop hex
-Teemo~5~Hyperpop,Hype Man~Going Viral~0/100~Viral damage-over-time spreads through exploding zombies. Mushroom infects a 3-hex area.~Collect X Hyperpop Hype
-Twisted Fate~5~Tango,Trickshot~Wildcard Cortado~0/50~Shop-based loot on rounds you reroll. 5 card attacks that each hit 3 enemies.~
-Vi~5~EDM,Juggernaut~Drop the Beatdown~0/50~Shields herself and allies, then repeated area slams. EDM upgrade: extra slam and healing.~
-Vladimir~5~Classical,Arcanist~The Opera Phantom~0/40~Omnivamp. Captivates debuffed enemies; drops a chandelier on everyone every few casts.~Only X champion in the two front rows
-Zeri~5~Goth,Swiftstriker~Lasers After Midnight~0/150~Dashes around firing Armor-piercing lasers.~
-Baron Nashor~7~One Monster Band~Assemble the Ensemble~80/120~Summons an 8-piece orchestra and a Riff Herald: board-wide knock-up and split damage. Takes 2 team slots.~Collect all X Composer instruments and deal X damage with your strongest Malzahar
-Rakan~7~Boy Band,Choreographer~Fly like a Peacock~0/55~Dashes into a group; feathers split damage and knock up within 2 hexes. Comes with clones.~Win X combats in a row at level 8+, or lose X in a row at level 8+
-Smeech~7~Jazz,Slayer~Upswing~0/4~Builds Beats. Shield, area hit and multi-strike; enough Beats grants an emblem for an inactive trait.~Have X or more non-unique traits active
-Sona~7~Producer,Collab~feat. Sona~0/190~Cannot attack. Pulses damage and shields, then a board-wide stun wave. Gains a band trait you pick.~Collab champions are inspired X times`;
-const CHAMPS=RAW.split("\n").map(l=>{const [n,c,t,a,m,d,u]=l.split("~");return{n,c:+c,t:t.split(","),a,m,d,u:u||""}});
-// Corrections from the full reveal (16 Nov 2026): level gates and the few quest numbers Riot has stated.
-const UNLOCK_FIX={"Galio":"Level 7, with Bodyguard, Juggernaut or Frontman active","Alistar":"Level 7, and a Chain Vest on a Caster or Marksman","Alune":"Level 7, and enough unique Heartsteel or Prodigy champions (Riot's example: 3 Heartsteel)","Jinx":"Level 7, and X items on an Ionic Spark or Hitmaker champion","Kayle":"Level 7, and X unique Pentakill or Swiftstriker champions","Vayne":"Level 7, and field Rock for X combats","Yasuo":"Level 7, and X star levels of True Damage and Slayer champions","Zac":"Level 7, and X unique Beach Pop or Juggernaut champions","Pyke":"Level 7, and end a combat with X or more gold","Vladimir":"Level 8, and only one champion in your two front rows","Janna":"Earn 45 gold of interest while fielding Xayah","Teemo":"Collect 900 Hyperpop Hype","Rakan":"At level 8 or higher: win X combats in a row, or lose X in a row","Smeech":"Level 9, and 8 or more non-unique traits active","Sona":"Level 10, and Collab champions are inspired X times"};
-const UNLOCK_LVL={Galio:7,Alistar:7,Alune:7,Jinx:7,Kayle:7,Vayne:7,Yasuo:7,Zac:7,Pyke:7,Vladimir:8,Rakan:8,Smeech:9,Sona:10};
-CHAMPS.forEach(c=>{if(UNLOCK_FIX[c.n])c.u=UNLOCK_FIX[c.n]});
+const CHAMPS=(typeof UNIT_RAW==="string"?UNIT_RAW:"").split("\n").filter(Boolean).map(l=>{const [n,c,t,u,r,rg,a,m,d]=l.split("~");return{n,c:+c,t:t.split(","),u:u||"",r,rg,a,m,d}});
+const UNLOCK_LVL=Object.fromEntries(CHAMPS.map(c=>{const m=c.u.match(/Level (\d+)/);return [c.n,m?+m[1]:0]}).filter(x=>x[1]));
 const CH=Object.fromEntries(CHAMPS.map(c=>[c.n,c]));
 const COSTS=[1,2,3,4,5,7];
 
 // k: band | class | solo.  bp: breakpoints.  tiers: what each breakpoint adds (X = value not published yet)
 const TRAITS=[
-["Beach Pop","band",[3,5,7],"Gain placeable instruments that empower adjacent allies with Health regen. Empowered Beach Pop champions also gain Attack Speed and Mana regen.",["1 instrument","2 instruments","Plus a periodic ocean breeze that heals and buffs Beach Pop champions"]],
-["Classical","band",[2,4,6],"Each member Captivates enemies in its own way. Classical champions gain Damage Amp that grows with total time enemies spend Captivated.",["Captivated enemies deal less damage","Captivated enemies drop roses on death that heal a Classical champion","Captivated enemies can join your bench on death"]],
-["EDM","band",[2],"Jax and Vi get upgraded abilities.",["Both EDM abilities are upgraded"]],
-["Gu Feng","band",[2,3,4],"Gu Feng champions gain stats that scale with your player level, so the band rewards leveling fast.",["Stats per level","More stats per level","Choose a Scroll. Heavenly Power: becomes a random recommended item, Radiant at level 10. Scroll of the Beast: AD, AP and Mana Regen, but two player-combat losses in a row end your game; reach level 10 with it to open level 11 (999 XP)"]],
-["Heartsteel","band",[1,3,5,7],"Every member grants a team bonus. Higher tiers let you pick Biases that upgrade members' abilities (the \"Heartsteel upgrade\" lines on their cards). One of the five Prismatic traits.",["Team bonuses from each member","Choose a Bias","Choose a 2nd Bias","Heartsteel champions gain an extra share of all active bonuses. Prismatic version (via the Prismatic pick and its quests): the text only says Heartsteel is back"]],
-["Hyperpop","band",[2,3,4,5],"Health and Attack Speed. After each player combat they generate Hype by star level (4 / 6 / 12 / 40) plus 1 per takedown. Each new Hype Level pays a reward.",["Health and Attack Speed","Stats, 2x Hype","Stats, 3x Hype","Stats, 4x Hype"]],
-["Illbeats","band",[2,3,4],"Open the Illbeats Mixer every planning phase and spread Decibels across four channels of 10 levels each: Health, Attack Damage, Ability Power and gold chance on takedown. Illbeats champions get the full mix, the rest of your team a share.",["X Decibels","More Decibels","More Decibels and a stronger mix"]],
-["Jazz","band",[2,3,4],"Your team gains Health and Damage Amp for every active non-unique trait. Rewards wide boards.",["Per-trait bonus","Larger bonus","Largest bonus"]],
-["K|DA","band",[3,5,7,10,13,15,21],"Counts TOTAL STAR LEVELS of your K|DA champions, not units, so it plays as a reroll comp. Each tier releases a song that powers them at combat start and again later. One of the five Prismatic traits.",["POP/STARS: 10% reduced max Mana","DRUM GO DUM: shield","VILLAIN: 60% decaying buff","I'LL SHOW YOU: all previous effects +33%","WATCH ME: stun all enemies 1.25s","FIRESTARTER: enemies take 16% max Health magic damage over 8s","Prismatic (needs the Prismatic pick and its quests): K|DA members rise to 4-star"],true,21],
-["Pentakill","band",[3,5,7,10],"Attack Damage and Ability Power. The first few enemies to drop below a Health threshold are executed and replaced by an allied ghoul.",["Stats, X executes","More stats and executes","More; first enemy to die summons the Iron Maiden","Prismatic (needs the Prismatic pick and its quests): MOSH PIT. No detail published"],false,10],
-["R&B","band",[1,2],"Your team takes less damage from abilities. With both, Mel and Rell are soul-linked: Rell absorbs part of Mel's damage and heals from Mel's damage dealt.",["Ability damage reduction","Mel and Rell soul-link"]],
-["Rock","band",[3,4,5,7],"Summons the Infernal Idol, which scales with the star level of your Rock champions.",["Summon the Idol","Idol heals from Rock champions' damage","Idol fires a massive blast through the most enemies on cast","Periodic bolts repeat a share of Rock damage as magic damage"]],
-["True Damage","band",[3,5],"Flip the record every planning phase. A-Side: members deal bonus true damage and you earn Bling on kills, plus more for winning. B-Side: earn Bling for losing, more per loss in a row, but winning there costs part of your Bling. Every 4 rounds, cash Bling out for rewards or Keep Rising. One of the five Prismatic traits: 99% bonus true damage, and the A-Side doubles Bling while the B-Side makes members drop gold on kills.",["Bonus true damage; Bling on kills and wins (A) or on losses (B)","30% true damage; more Bling"]],
-["Ionic Spark","band",[3,5,7,10],"Fans send gifts every X seconds. Members gain Health.",["Letters that heal and buff","Personalised gifts","Gold and a consumable every X player combats","Prismatic (needs the Prismatic pick and its quests): fans rush the stage"],false,10],
-["Arcanist","class",[2,4,6],"Team Ability Power; Arcanists gain more.",["","",""]],
-["Bodyguard","class",[2,4,6],"While a Bodyguard is alive, team Armor and Magic Resist; Bodyguards gain more.",["","",""]],
-["Choreographer","class",[2,3,4,5],"Allies starting in the front 2 rows gain a Shield, everyone else Damage Amp. Choreographers get double.",["","","",""]],
-["Collab","class",[3,5],"Collab champions become inspired after enough hits dealt or taken, gaining AD and AP. Inspirations also pay out copies of Collab champions. A different set of champions has Collab each game, so the members listed here are only this reveal's examples.",["Inspired stats","More stats"]],
-["Encore","class",[2,4],"Ability projectiles fire one extra time at reduced effectiveness.",["X effectiveness","Higher effectiveness"]],
-["Frontman","class",[2,4,6],"Team Health; Frontmen gain more, and more again after their first cast.",["","",""]],
-["Hitmaker","class",[2,4],"Attack Damage. The Hitmakers with the most items become Big Shots with even more.",["1 Big Shot","More Big Shots"]],
-["Juggernaut","class",[2,4,6],"Durability that grows with missing Health.",["","",""]],
-["Manager","class",[2,3,4],"Gain a Spotlight Hex. The ally in it gets bonuses at combat start and periodically.",["Bonus","Plus Mana","Plus they drop gold"]],
-["Prodigy","class",[2,3,4,5],"Team Mana Regen; Prodigies gain more.",["","","","Lowest-Health ally heals from Prodigy ability damage"]],
-["Renegade","class",[2,3,4,5],"Precision (abilities can crit), Critical Strike Chance and Damage.",["","","","Renegades also gain Durability"]],
-["Slayer","class",[2,4,6],"Attack Speed and Omnivamp that grows with missing Health.",["","",""]],
-["Swiftstriker","class",[2,3,4,5],"Team Attack Speed; Swiftstrikers gain stacking Attack Speed over time.",["","","",""]],
-["Trickshot","class",[2,3,4],"Attacks and abilities ricochet, each bounce dealing a share of the previous.",["X ricochets","More","Most"]],
-["8-Bit","solo",[1],"Miss Fortune. Tracks your team's damage as a score (hers counts triple). Beat a high score, get a prize.",[]],
-["Beat Master","solo",[1],"Rell. At max Health she mounts up and fully heals; mounted, her Mana cost drops and every 3rd attack hits a line.",[]],
-["Boy Band","solo",[1],"Rakan. Comes with placeable clones that copy his completed and Radiant items.",[]],
-["Composer","solo",[1],"Malzahar. Mystical Instruments appear in your shop, one per rarity; each gives team AP (double for him). All 5 plus enough Malzahar damage unlocks Baron Nashor.",[]],
-["Country","solo",[1],"Alistar. Gains Durability at combat start if he has enough bonus Health.",[]],
-["Disco","solo",[1],"Nunu & Willump. Team heals each second; after enough casts, Disco Fever grants team Attack Speed.",[]],
-["Emo","solo",[1],"Amumu. Gains Armor and Magic Resist if he starts with no adjacent allies.",[]],
-["Freestyle","solo",[1],"Akali (True Damage). A-Side prints gold, B-Side restores player Health.",[]],
-["Goth","solo",[1],"Zeri. The first enemy she damages each combat has Attack Damage stolen for her.",[]],
-["Hype Man","solo",[1],"Teemo. Hyperpop champions dealing or taking damage store extra Hype.",[]],
-["Indie","solo",[1],"Seraphine. Grants a random champion after combat; 3-starring champions upgrades her to Rising Star and then Superstar.",[]],
-["Mariachi","solo",[1],"Nidalee. Casts in Cougar Form when healthy, Human Form otherwise.",[]],
-["Melodic Heart","solo",[1],"Gwen. Opens combat in Mist: untargetable by attacks, allies inside gain Durability.",[]],
-["One Monster Band","solo",[1],"Baron Nashor. Takes 2 team slots, is unstoppable, and after his first cast steals AD, AP, Attack Speed and crit from all enemies.",[]],
-["Producer","solo",[1],"Sona. Choose a band to feature and gain its trait (add it with an emblem in the builder). Converts her AD and Attack Speed to AP.",[]],
-["Record Mogul","solo",[1],"Dr. Mundo. Hands out Record Contracts: contracted champions gain Damage Amp and their kills give him permanent Health.",[]],
-["Synthwave","solo",[1],"Garen. At a Health threshold, gains a shield based on healing and shielding received.",[]],
-["Tango","solo",[1],"Twisted Fate. The nearest ally becomes his Tango Partner: Attack Speed, and their damage Burns and Wounds.",[]],
-["Windblessed","solo",[1],"Janna. Opens combat with a tornado that knocks up enemies in its path.",[]]
+["Beach Pop","band",[3,5,7],"Gain placeable instruments that empower adjacent allies: empowered allies regenerate 2% Health every 3 seconds. Empowered Beach Pop champions also gain Attack Speed and regenerate Mana every 3 seconds.",["1 instrument; 20% Attack Speed, 5 Mana","2 instruments; 35% Attack Speed, 8 Mana","And every 10 seconds an ocean breeze heals Beach Pop champions for 20% Health and gives them 40 Mana"]],
+["Classical","band",[2,4,6],"Each member Captivates enemies in its own way. Classical champions gain Damage Amp, +1% for every 6 seconds an enemy spends Captivated.",["8% Damage Amp; Captivated enemies deal 10% less damage","18% Damage Amp; Captivated enemies throw roses on death that heal a Classical champion for 10% Health","33% Damage Amp; Captivated enemies have a 15% chance to join your bench on death"]],
+["EDM","band",[2],"Jax and Vi get their EDM upgrades (see their cards).",["EDM abilities become harder, better, faster, stronger"]],
+["Gu Feng","band",[2,3,4],"Gu Feng champions gain stats per player level, so the band rewards leveling fast.",["2% AD and AP and 2 Armor and Magic Resist per level","Also 2% Health per level","Choose a Scroll. Scroll of Heavenly Prayer: each round it equips a random recommended item. Scroll of the Beast: AD, AP and Mana Regen, but two player-combat losses in a row end your game; reach level 10 with it to open level 11 (999 XP)"]],
+["Heartsteel","band",[1,3,5,7],"Each fielded member gives your team a bonus: Sett 75 Health, Kayn 7% AD, Ezreal 10% Crit Chance, K'Sante 8 Armor and Magic Resist, Alune 7% AP, Yone 5% Omnivamp, Aphelios 6% Attack Speed, an Emblem holder 3% Durability, Sona 5% more healing and shielding. Biases upgrade members' abilities (the Heartsteel Upgrade lines on their cards).",["Team bonuses from each member","Choose a Bias","Choose a 2nd Bias","Heartsteel champions gain an extra 150% of active Heartsteel bonuses. Prismatic (Heartsteel Prismatic Tour quest: with 7 active, have Heartsteel allies deal damage, block damage and heal): HEARTSTEEL IS BACK"]],
+["Hyperpop","band",[2,3,4,5],"Health and Attack Speed. After each player combat, each member makes Hype by star level (3 / 6 / 12 / 40) plus 1 per takedown. Each new Hype Level pays a reward, and higher tiers multiply your Hype.",["100 Health, 10% Attack Speed","200 Health, 15% Attack Speed, 1.5x Hype","300 Health, 25% Attack Speed, 3x Hype","500 Health, 40% Attack Speed, 3.5x Hype"]],
+["Illbeats","band",[2,3,4],"Open the Illbeats Mixer every planning phase and spread Decibels across Health, Attack Damage, Ability Power and gold chance on takedown (10 levels each). Illbeats champions get the full mix; your team gets 50% of it.",["10 Decibels","14 Decibels","18 Decibels, and the mix is 50% stronger"]],
+["Jazz","band",[2,3,4],"For each active non-unique trait, your team gains Health and Damage Amp, so Jazz wants many small traits.",["1.5% Health and 1% Damage Amp per trait","2.5% Health and 1.5% Damage Amp per trait","3.5% Health and 2% Damage Amp per trait"]],
+["K|DA","band",[3,5,7,10,13,15,21],"Counts TOTAL STAR LEVELS of your K|DA champions, not units, so it plays as a reroll comp. At combat start and again after 8 seconds, members gain power from each song.",["POP/STARS: 10% reduced max Mana","DRUM GO DUM: 12% Health Shield for 8 seconds","VILLAIN: 60% Attack Speed that decays over 8 seconds","I'LL SHOW YOU: all previous effects +25%","WATCH ME: stun all enemies for 1.25 seconds","FIRESTARTER: enemies take 16% max Health magic damage over 8 seconds","GIRLS (Prismatic, K|DA Prismatic Tour quest): K|DA members ascend to 4-star"],true,21],
+["Pentakill","band",[3,5,7],"Members gain AD and AP. The first few enemies to drop below 10% Health are executed and replaced by an allied ghoul.",["15% AD and AP; 2 executes","30% AD and AP; 3 executes","35% AD and AP; 4 executes, and the first enemy to die summons the Iron Maiden. Prismatic (Pentakill Prismatic Tour quest: reach level 10 and score multikills with 7 active): MOSH PIT"]],
+["R&B","band",[1,2],"Mel and Rell.",["Your team takes 6% less damage from abilities","Your strongest Mel and Rell are soul-linked: 70% of damage Mel takes goes to Rell, and Rell heals for 20% of Mel's damage"]],
+["Rock","band",[3,4,5,7],"Summons the Infernal Idol, who grows stronger with the star levels of your Rock champions.",["Summon the Infernal Idol","He heals for 10% of damage dealt by Rock champions","On cast, he fires a massive blast through the most enemies","Every 3 seconds he lives, 2 bolts repeat 15% of Rock champions' damage as magic damage"]],
+["True Damage","band",[3,5],"Flip the record every planning phase. A-Side: earn Bling for winning. B-Side: earn Bling for losing. Every 4 rounds, cash Bling out for rewards or Keep Rising. Prismatic (True Damage Prismatic Tour quest: with 5 active, hit the right sequence of wins and losses): 99% bonus true damage, plus double Bling on the A-Side (KNOW MY NAME) or gold on kills on the B-Side (GIANTS).",["A-Side: 18% bonus true damage, 2 Bling per kill, +10 for a win. B-Side: 14 Bling per loss, +6 per loss in a row; a win costs 50% of your Bling","A-Side: 30% true damage, 4 Bling per kill, +18 for a win. B-Side: also heal 2 player Health and gain 2 XP each round"]],
+["Ionic Spark","band",[3,5,7,10],"Fans send gifts every 4 seconds. Members gain Health.",["100 Health; letters that restore 2% Health and give 7% Attack Speed","250 Health; personalized gifts that give 25% AD or 25% AP","550 Health; every 2 player combats, gain gold and a consumable","Prismatic (Ionic Spark Prismatic Tour quest: with 7 active, collect album signatures over 10 rounds, then field 10): fans rush the stage"],false,10],
+["Arcanist","class",[2,4,6],"Team Ability Power; Arcanists gain more.",["12% AP, 25% for Arcanists","18% AP, 50% for Arcanists","30% AP, 70% for Arcanists"]],
+["Bodyguard","class",[2,4,6],"While a Bodyguard lives, your team gains 15 Armor and Magic Resist; Bodyguards gain more.",["Bodyguards: 22 Armor and Magic Resist","Bodyguards: 55 Armor and Magic Resist","Bodyguards: 115 Armor and Magic Resist"]],
+["Choreographer","class",[2,3,4,5],"Allies starting in the front 2 rows gain a Shield; everyone else gains Damage Amp. Choreographers get double.",["150 Shield; 6% Damage Amp","225 Shield; 10% Damage Amp","375 Shield; 15% Damage Amp","550 Shield; 20% Damage Amp"]],
+["Collab","class",[3,5],"Collab champions become inspired after dealing or taking damage 8 times, gaining AD and AP. Every 7 inspirations in a player combat, gain copies of Collab champions. A different set of champions has Collab each game: mark them in the builder's unit panel.",["8% AD and AP","20% AD and AP"]],
+["Encore","class",[2,4],"When Encore champions fire ability projectiles, they fire an extra one at reduced effectiveness.",["25% effectiveness","50% effectiveness"]],
+["Frontman","class",[2,4,6],"Your team gains 100 Health. Frontmen gain more, increased after their first cast.",["15% Health, 25% after first cast","22% Health, 40% after first cast","35% Health, 60% after first cast"]],
+["Hitmaker","class",[2,4],"Hitmakers gain 12% AD; those holding the most items become Big Shots and gain more.",["1 Big Shot, 20% AD","2 Big Shots, 35% AD"]],
+["Juggernaut","class",[2,4,6],"Durability that grows with missing Health.",["15% to 25% Durability","25% to 35% Durability","35% to 45% Durability"]],
+["Manager","class",[2,3,4],"Gain a Spotlight Hex. The ally who starts combat in it gains bonuses at combat start and every 5 seconds.",["6% AD and AP","Also 8 Mana","Also drops 1 gold"]],
+["Prodigy","class",[2,3,4,5],"Your team gains 1 Mana Regen; Prodigies gain more.",["2 Mana Regen","3 Mana Regen","6 Mana Regen","7 Mana Regen; the lowest-Health ally heals for 12% of Prodigy ability damage"]],
+["Renegade","class",[2,3,4,5],"Renegades gain Precision (abilities can crit), Crit Chance and Crit Damage.",["15% Crit Chance, 12% Crit Damage","20% Crit Chance, 18% Crit Damage","25% Crit Chance, 22% Crit Damage","35% Crit Chance, 25% Crit Damage; Renegades also gain 10% Durability"]],
+["Slayer","class",[2,4,6],"Attack Speed and Omnivamp, increased by up to 100% based on missing Health.",["20% Attack Speed, 8% Omnivamp","40% Attack Speed, 10% Omnivamp","65% Attack Speed, 12% Omnivamp"]],
+["Swiftstriker","class",[2,3,4,5],"Your team gains 10% Attack Speed. Swiftstrikers gain more every 2 seconds, up to 5 times.",["5% Attack Speed per stack","7% per stack","13% per stack","20% per stack"]],
+["Trickshot","class",[2,3,4],"Attacks and abilities ricochet, each bounce dealing a share of the previous one.",["1 ricochet at 22% damage","1 ricochet at 33% damage","2 ricochets at 33% damage"]],
+["8-Bit","solo",[1],"Miss Fortune. Keeps score of your team's damage (hers counts triple). Beat a high score to win a prize.",[]],
+["Beat Master","solo",[1],"Rell. At 50% max Health she mounts up and fully heals over 2 seconds. Mounted, her max Mana drops by 40 and every 3rd attack deals 50% / 75% / 500% of her Armor plus Magic Resist as magic damage in a line.",[]],
+["Boy Band","solo",[1],"Rakan. Comes with 2 placeable clones (9 at 3-star) that have 50% of his max Health, deal 30% damage and copy his completed and Radiant items.",[]],
+["Composer","solo",[1],"Malzahar. Mystical Instruments, one of each rarity, can appear in your shop. Each one you own gives your team 3% AP (Malzahar gets double). With all 5 and 60,000 damage dealt by Malzahar, he unlocks Baron Nashor.",[]],
+["Country","solo",[1],"Alistar. At combat start, if your strongest Alistar has over 500 bonus Health, he gains 15% Durability.",[]],
+["Disco","solo",[1],"Nunu & Willump. Your team heals 1% max Health per second. After 6 casts, Disco Fever gives your team 125% Attack Speed.",[]],
+["Emo","solo",[1],"Amumu gains 25 / 40 / 55 Armor and Magic Resist if he starts combat with no adjacent allies.",[]],
+["Freestyle","solo",[1],"Akali (True Damage). A different passive on each side of the record: the A-Side prints gold, the B-Side restores player Health.",[]],
+["Goth","solo",[1],"Zeri. The first time your strongest Zeri damages an enemy each combat, bats steal 8% of its Attack Damage for her.",[]],
+["Hype Man","solo",[1],"Teemo. Whenever a Hyperpop champion deals or takes 2500 damage, store an extra Hype.",[]],
+["Indie","solo",[1],"Seraphine. After combat she grants a random champion. When you 3-star a champion she becomes a Rising Star (upgraded ability and a subscriber reward); after 3-starring 4 champions she becomes a Superstar.",[]],
+["Mariachi","solo",[1],"Nidalee. Casting above 75% Health she turns into a cougar and casts Pounce Party; otherwise Dance of Life. Below 50% Health she leaps away and turns human.",[]],
+["Melodic Heart","solo",[1],"Gwen. For the first 12 seconds of combat she is surrounded by Mist and cannot be targeted by attacks; allies in the Mist gain 10% Durability.",[]],
+["One Monster Band","solo",[1],"Baron Nashor takes 2 team slots and is unstoppable. After his first cast, he steals AD, AP, Attack Speed and Crit Chance from all enemies (5% at 1-star, 30% at 2- and 3-star).",[]],
+["Producer","solo",[1],"Sona. When fielded, choose a band to feature and gain its trait (add that band's emblem in the builder). She converts all bonus AD and Attack Speed into AP.",[]],
+["Record Mogul","solo",[1],"Dr. Mundo. Gain a Record Contract now and every 4 rounds. Contracted champions gain 5% Damage Amp, and their kills give Dr. Mundo 25 permanent Health. The contract comes back when that champion is sold or benched.",[]],
+["Synthwave","solo",[1],"Garen. At 35% Health, gain a Shield for 6 seconds equal to 50% of the healing and shielding he received this combat.",[]],
+["Tango","solo",[1],"Twisted Fate. The nearest ally becomes his Tango Partner: 15% Attack Speed, and their damage applies 1% Burn and 33% Wound for 3 seconds.",[]],
+["Windblessed","solo",[1],"Janna. At combat start, a tornado knocks up enemies in its path for 1.25 seconds (1.75 at 2-star).",[]]
 ].map(([n,k,bp,d,tiers,stars,pr])=>({n,k,bp,d,tiers,stars:!!stars,pr:pr||0}));
 const TR=Object.fromEntries(TRAITS.map(t=>[t.n,t]));
 TRAITS.forEach(t=>t.m=CHAMPS.filter(c=>c.t.includes(t.n)));
 
-const TIERN={S:"Silver",G:"Gold",P:"Prismatic",H:"Hero",U:"Tier unconfirmed"};
+const TIERN={S:"Silver",G:"Gold",P:"Prismatic",H:"Hero"};
+const HEROS=new Set(typeof AUG_HERO!=="undefined"?AUG_HERO:[]);
 const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
 const AUGS=(typeof AUG_RAW==="string"?AUG_RAW:"").split("\n").filter(Boolean).map(l=>{const [n,t,d]=l.split("~");
   const txt=(n+". "+d).replace(/K\/DA/g,"K|DA"),has=w=>new RegExp("(^|[^A-Za-z])"+reEsc(w)+"s?(?![A-Za-z])").test(txt);
   const traits=n==="Bodyguard Training"?[]:TRAITS.filter(x=>x.k!=="solo"&&has(x.n)).map(x=>x.n);
   const champs=CHAMPS.filter(c=>!c.n.includes("(")&&has(c.n)).map(c=>c.n);
-  return{n,t,d,traits,champs,set:traits.length+champs.length>0}});
+  const hero=HEROS.has(n);return{n,t:hero?"H":t,base:t,d,traits,champs,hero,set:traits.length+champs.length>0}});
+const tierLabel=a=>a.hero?"Hero · "+TIERN[a.base]:TIERN[a.t];
 const AUG=Object.fromEntries(AUGS.map(a=>[a.n,a]));
-const augPill=(n,x)=>AUG[n]?`<span class="aug a${AUG[n].t}" title="${esc(AUG[n].d)}">${esc(n)}${x||""}</span>`:"";
+let AUGIMG=new Set();
+const augImg=(n,s)=>AUGIMG.has(slug(n))?`<img class="augi" alt="" draggable="false" style="--s:${s}px" src="img/augments/${slug(n)}.png">`:"";
+const augPill=(n,x)=>AUG[n]?`<span class="aug a${AUG[n].t}" title="${esc(AUG[n].d)}">${augImg(n,16)}${esc(n)}${x||""}</span>`:"";
 const COMPONENTS=["B.F. Sword","Recurve Bow","Needlessly Large Rod","Tear of the Goddess","Chain Vest","Negatron Cloak","Giant's Belt","Sparring Gloves"];
 const RECIPES=[
 ["Deathblade","Giant Slayer","Hextech Gunblade","Spear of Shojin","Edge of Night","Bloodthirster","Sterak's Gage","Infinity Edge"],
@@ -401,7 +313,10 @@ const RECIPES=[
 [0,0,0,0,0,0,0,"Thief's Gloves"]];
 const recipe=(i,j)=>i<=j?RECIPES[i][j]:RECIPES[j][i];
 const ITEMS=[...new Set(RECIPES.flat().filter(Boolean))].sort();
-const EMBLEMS=TRAITS.filter(t=>t.k!=="solo").map(t=>"Emblem: "+t.n);
+// Set 19 emblems. Crafted: Spatula + component (bands) or Frying Pan + component (classes). The rest come from augments and loot.
+const EMBLEM_RECIPE={"Pentakill":"Spatula + B.F. Sword","Heartsteel":"Spatula + Chain Vest","Illbeats":"Spatula + Giant's Belt","K|DA":"Spatula + Needlessly Large Rod","Ionic Spark":"Spatula + Negatron Cloak","Classical":"Spatula + Recurve Bow","Rock":"Spatula + Sparring Gloves","Beach Pop":"Spatula + Tear of the Goddess","Hitmaker":"Frying Pan + B.F. Sword","Bodyguard":"Frying Pan + Chain Vest","Frontman":"Frying Pan + Giant's Belt","Arcanist":"Frying Pan + Needlessly Large Rod","Slayer":"Frying Pan + Negatron Cloak","Swiftstriker":"Frying Pan + Recurve Bow","Renegade":"Frying Pan + Sparring Gloves","Prodigy":"Frying Pan + Tear of the Goddess"};
+const EMBLEM_NOCRAFT=["Choreographer","Hyperpop","Jazz","Manager","True Damage","Juggernaut"];
+const EMBLEMS=[...Object.keys(EMBLEM_RECIPE),...EMBLEM_NOCRAFT].sort().map(t=>"Emblem: "+t);
 
 // Untested ideas built from trait overlap. Each is a question to answer in a real game.
 const IDEAS=[
@@ -452,10 +367,14 @@ const av=(c,s,w)=>`<span class="av ${w?"w":""} k${c.c}" style="--s:${s}px">${ini
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]/g,"");
 let ITEMIMG=new Set();
 fetch("img/items/manifest.json").then(r=>r.json()).then(a=>{ITEMIMG=new Set(a);render()}).catch(()=>{});
+fetch("img/augments/manifest.json").then(r=>r.json()).then(a=>{AUGIMG=new Set(a);render()}).catch(()=>{});
+let TRAITIMG=new Set();
+fetch("img/traits/manifest.json").then(r=>r.json()).then(a=>{TRAITIMG=new Set(a);render()}).catch(()=>{});
+const trIcon=(n,s)=>TRAITIMG.has(slug(n))?`<img class="tri" alt="" style="--s:${s}px" src="img/traits/${slug(n)}.png">`:"";
 const isEmb=n=>n.startsWith("Emblem: ");
 function itIcon(n,s){const e=isEmb(n),t=e?n.slice(8):n,key=slug(e?t+"emblem":n);
   const lab=t.split(/[^A-Za-z]+/).filter(Boolean).map(w=>w[0]).join("").slice(0,3).toUpperCase();
-  return `<span class="it ${e?"emb":""}" style="--s:${s}px" title="${esc(n)}">${lab}${!e&&ITEMIMG.has(key)?`<img alt="" draggable="false" src="img/items/${key}.png">`:""}</span>`}
+  return `<span class="it ${e?"emb":""}" style="--s:${s}px" title="${esc(n)}">${lab}${ITEMIMG.has(key)?`<img alt="" draggable="false" src="img/items/${key}.png">`:""}</span>`}
 function equip(i,name){const u=state.board.units[i];if(!u)return;u.it=(u.it||[]).filter(Boolean);if(u.it.length<3){u.it.push(name);save()}}
 function compNeeded(){const m={};state.board.units.forEach(u=>(u.it||[]).filter(Boolean).forEach(n=>{if(isEmb(n))return;
   for(let i=0;i<8;i++)for(let j=i;j<8;j++)if(RECIPES[i][j]===n){m[COMPONENTS[i]]=(m[COMPONENTS[i]]||0)+1;m[COMPONENTS[j]]=(m[COMPONENTS[j]]||0)+1;return}
@@ -472,11 +391,11 @@ const ui={q:"",cost:0,trait:"",compact:false,pq:"",pcost:0,ptrait:"",sel:-1,tmod
 const slots=u=>u.reduce((a,x)=>a+(x.n==="Baron Nashor"?2:1),0);
 function calcTraits(units){
   const by={};
-  for(const u of units){const ch=CH[u.n];if(!ch)continue;const ts=new Set(ch.t);
+  for(const u of units){const ch=CH[u.n];if(!ch)continue;const ts=new Set(ch.t);if(u.co)ts.add("Collab");
     (u.it||[]).forEach(i=>{if(i&&i.startsWith("Emblem: ")&&TR[i.slice(8)])ts.add(i.slice(8))});
     ts.forEach(t=>{by[t]=by[t]||{};by[t][u.n]=Math.max(by[t][u.n]||0,u.s||1)})}
   return Object.entries(by).map(([t,m])=>{const def=TR[t],vals=Object.values(m);const count=def.stars?vals.reduce((a,b)=>a+b,0):vals.length;let idx=-1;def.bp.forEach((b,i)=>{if(count>=b)idx=i});
-    const rk=idx<0?"":def.bp.length===1?"unique":((def.pr&&count>=def.pr)||(!def.pr&&idx===def.bp.length-1&&def.bp.length>=4))?"prism":["bronze","silver","gold","gold","gold","gold"][idx];
+    const rk=idx<0?"":def.bp.length===1?"unique":(def.pr&&count>=def.pr)?"prism":["bronze","silver","gold"][Math.min(idx,2)];
     return{t,count,idx,def,rk}}).sort((a,b)=>(b.idx>=0)-(a.idx>=0)||(a.def.k==="solo")-(b.def.k==="solo")||b.idx-a.idx||b.count-a.count||a.t.localeCompare(b.t));
 }
 const chip=(c,act,cls)=>`<button class="chip k${c.c} ${c.u?"lock":""} ${cls||""}" data-act="${act}" data-n="${esc(c.n)}" title="${esc(c.t.join(" · "))}">${av(c,22)}${esc(c.n)}</button>`;
@@ -485,7 +404,7 @@ const bps=(def,count)=>`<span class="bps">${def.bp.map(b=>`<span class="bp ${cou
 /* ---------- VIEWS ---------- */
 function champCard(c){return `<article class="card ccard k${c.c}"><div class="cimg">${ini(c.n)}${im(c.n)}<span class="cbadge">${c.c} cost</span>${c.u?`<span class="clock">Unlock</span>`:""}<span class="nm">${esc(c.n)}</span></div>
 <div class="cbody"><div class="pills">${c.t.map(t=>`<span class="pill ${TR[t].k==="class"?"":"band"}">${esc(t)}</span>`).join("")}</div>
-<div class="ab"><b>${esc(c.a)}</b> · mana ${esc(c.m)}<br>${esc(c.d)}</div>${c.u?`<div class="unlock">${esc(c.u)}</div>`:""}${AUGS.some(a=>a.champs.includes(c.n.replace(/ \(.*/,"")))?`<div class="pills">${AUGS.filter(a=>a.champs.includes(c.n.replace(/ \(.*/,""))).map(a=>augPill(a.n)).join("")}</div>`:""}
+<div class="stat">${esc(c.r)} · range ${esc(c.rg)}${c.m?` · mana ${esc(c.m)}`:""}</div><div class="ab"><b>${esc(c.a)}</b><br>${esc(c.d).split(" | ").join("<br>")}</div>${c.u?`<div class="unlock">${esc(c.u)}</div>`:""}${AUGS.some(a=>a.champs.includes(c.n.replace(/ \(.*/,"")))?`<div class="pills">${AUGS.filter(a=>a.champs.includes(c.n.replace(/ \(.*/,""))).map(a=>augPill(a.n)).join("")}</div>`:""}
 <div style="margin-top:auto"><button class="btn sm" data-act="add-go" data-n="${esc(c.n)}">Add to builder</button></div></div></article>`}
 function champList(onlyUnlock){
   const q=ui.q.toLowerCase();
@@ -497,28 +416,28 @@ function filterBar(){return `<div class="row filters">
 ${[0,...COSTS].map(k=>`<button class="btn sm ${ui.cost===k?"on":""}" data-act="cost" data-k="${k}">${k||"All"}</button>`).join("")}
 <select id="ftrait" aria-label="Filter by trait"><option value="">Any trait</option>${TRAITS.map(t=>`<option ${ui.trait===t.n?"selected":""}>${esc(t.n)}</option>`).join("")}</select>
 <button class="btn sm ${ui.compact?"on":""}" data-act="compact">Compact</button></div>`}
-function vChampions(){return `<h1>Set 19 champions</h1><p class="lead">All 94 champions from the Dev Drop: 15 one-costs, 18 two-costs, 16 three-costs, 22 four-costs, 19 five-costs and 4 seven-costs. ${CHAMPS.filter(c=>c.u).length} of them are unlocks.</p>
-<p class="note">Set 19 reaches PBE on Tuesday 17 November 2026 and goes live on Wednesday 2 December (patch 19.1). Most numbers are still hidden in the pre-PBE build, so damage values, most quest counts and trait percentages show as X; the numbers shown are the ones Riot has stated. Ability text is a short summary.</p>${filterBar()}<div id="list" class="${ui.compact?"compact":""}">${champList(false)}</div>`}
+function vChampions(){return `<h1>Set 19 champions</h1><p class="lead">All 94 champions from the PBE build: 15 one-costs, 18 two-costs, 16 three-costs, 22 four-costs, 19 five-costs and 4 seven-costs. ${CHAMPS.filter(c=>c.u).length} of them are unlocks.</p>
+<p class="note">Set 19 has been on PBE since 17 November and goes live on 2 December (patch 19.1). Ability values are from the PBE build, shown for 1 / 2 / 3 stars, and can change before launch. Collab is not shown on any champion here because Riot gives it to a different set of champions each game; mark it per unit in the team builder.</p>${filterBar()}<div id="list" class="${ui.compact?"compact":""}">${champList(false)}</div>`}
 function vUnlocks(){return `<h1>Unlockable champions</h1><p class="lead">These are not in the shop at the start. Finish the quest and a copy appears in your next shop; the champion then stays in your pool for the rest of the game.</p>
 <div class="grid2" style="margin-bottom:16px"><section class="panel"><h2>Unlock rules</h2><ul class="tiers"><li><b>→</b>The shop after an unlock holds a copy of that champion.</li><li><b>→</b>A high-cost champion that few players have unlocked is harder to 3-star.</li><li><b>→</b>You can turn one away: leave it unbought, or sell every copy, and it slowly stops showing up.</li><li><b>→</b>The two Akalis are separate champions with their own pools, and unlocking one blocks the other's quest.</li></ul></section>
-<section class="panel"><h2>Level gates</h2><ul class="tiers"><li><b>7</b>Galio, Alistar, Alune, Jinx, Kayle, Vayne, Yasuo, Zac, Pyke</li><li><b>8</b>Vladimir, Rakan</li><li><b>9</b>Smeech (8 or more non-unique traits)</li><li><b>10</b>Sona</li><li><b>→</b>Stated numbers so far: Janna needs 45 gold of interest, Teemo needs 900 Hype. Other counts are still hidden.</li></ul></section></div>${filterBar()}<div id="list" class="${ui.compact?"compact":""}">${champList(true)}</div>`}
-function traitCard(t){return `<article class="card"><div class="hd"><span class="nm">${esc(t.n)}</span><span class="cost" style="color:var(--mute)">${t.k==="band"?"Band":t.k==="class"?"Class":"Solo act"}${t.stars?" · counts stars":""}</span></div>
+<section class="panel"><h2>Level gates</h2><ul class="tiers"><li><b>7</b>Galio, Alistar, Alune, Jinx, Kayle, Vayne, Yasuo, Zac, Pyke</li><li><b>8</b>Vladimir, Rakan</li><li><b>9</b>Smeech (8 or more non-unique traits)</li><li><b>10</b>Sona</li><li><b>→</b>No level gate but late: Thresh (300 seconds of Captivate), Gwen (250 fan cheers), Teemo (900 Hype), Mordekaiser (10 Pentakill star levels), Baron Nashor (all 5 instruments and 60,000 Malzahar damage).</li></ul></section></div>${filterBar()}<div id="list" class="${ui.compact?"compact":""}">${champList(true)}</div>`}
+function traitCard(t){return `<article class="card"><div class="hd"><span class="nm" style="display:flex;gap:8px;align-items:center">${trIcon(t.n,26)}${esc(t.n)}</span><span class="cost" style="color:var(--mute)">${t.k==="band"?"Band":t.k==="class"?"Class":"Solo Artist"}${t.stars?" · counts stars":""}</span></div>
 ${bps(t,0)}<div class="ab">${esc(t.d)}</div>
 ${t.tiers.some(Boolean)?`<ul class="tiers">${t.bp.map((b,i)=>t.tiers[i]?`<li><b>${b}</b>${esc(t.tiers[i])}</li>`:"").join("")}</ul>`:""}
 <div class="chips">${t.m.map(c=>chip(c,"add-go")).join("")}</div>${AUGS.some(a=>a.traits.includes(t.n))?`<div class="pills">${AUGS.filter(a=>a.traits.includes(t.n)).map(a=>augPill(a.n)).join("")}</div>`:""}
 ${t.k!=="solo"?`<div><button class="btn sm" data-act="vertical" data-t="${esc(t.n)}">Load vertical in builder</button></div>`:""}</article>`}
 function vTraits(){const sec=(k,h,p)=>`<div class="costh">${h}</div><p class="lead">${p}</p><div class="cards">${TRAITS.filter(t=>t.k===k).map(traitCard).join("")}</div>`;
 return `<h1>Set 19 traits</h1><p class="lead">14 bands, 14 classes and 19 one-champion traits (Riot calls those champions Solo Artists). A lock marks an unlockable member. Tap a champion to drop it into the builder.</p>
-<section class="panel" style="margin-bottom:6px;max-width:95ch"><h2>Prismatic traits work differently</h2><p class="stat" style="margin:0">Prismatic tiers no longer come from stacking emblems. You pick one of five Prismatic traits (Pentakill, Ionic Spark, K|DA, Heartsteel or True Damage) through a Prismatic Tour augment, and finishing its quests unlocks that trait's top tier. Riot has not published the quests. Emblems still add a trait to a champion, so they still help you reach the normal breakpoints.</p></section>
+<section class="panel" style="margin-bottom:6px;max-width:95ch"><h2>Prismatic traits work differently</h2><p class="stat" style="margin:0">Prismatic tiers no longer come from stacking emblems. You pick one of five Prismatic traits (Pentakill, Ionic Spark, K|DA, Heartsteel or True Damage) through a Prismatic Tour augment, and finishing its quests unlocks that trait's top tier. Each Prismatic Tour augment hands you 3 champions of that band plus loot and starts its quest:</p><ul class="tiers quests" style="margin-top:8px"><li><b>K|DA</b>Reach 21 star levels of K|DA champions.</li><li><b>Pentakill</b>Reach level 10 and have a Pentakill ally score multikills with 7 Pentakill active.</li><li><b>Ionic Spark</b>With 7 Ionic Spark active, collect album signatures over 10 rounds, then field 10 Ionic Spark.</li><li><b>Heartsteel</b>With 7 Heartsteel active, have Heartsteel allies deal damage, block damage and heal.</li><li><b>True Damage</b>With 5 True Damage active, hit the right sequence of wins and losses.</li></ul><p class="stat" style="margin:8px 0 0">Emblems still add a trait to a champion, so they still help you reach the normal breakpoints.</p></section>
 ${sec("band","Bands","Origins. K|DA, Heartsteel, Pentakill and True Damage share names with Remix Rumble but work differently here.")}${sec("class","Classes","Stat and role traits. Percentages are not published yet.")}${sec("solo","Solo Artists","Unique traits active with a single champion.")}`}
 
 function augList(){const q=ui.aq.toLowerCase();
   const list=AUGS.filter(a=>(!ui.atier||a.t===ui.atier)&&(!ui.aset||a.set)&&(!ui.atrait||a.traits.includes(ui.atrait))&&(!q||(a.n+" "+a.d).toLowerCase().includes(q)));
-  return ["H","U","S","G","P"].map(t=>{const g=list.filter(a=>a.t===t);return g.length?`<div class="costh a${t}"><span class="dot"></span>${TIERN[t]} · ${g.length}</div><div class="cards">${g.map(a=>`<article class="card acard a${a.t}"><div class="hd"><span class="nm">${esc(a.n)}</span><span class="cost">${TIERN[a.t]}</span></div><div class="ab">${esc(a.d)}</div>
+  return ["H","S","G","P"].map(t=>{const g=list.filter(a=>a.t===t);return g.length?`<div class="costh a${t}"><span class="dot"></span>${TIERN[t]} · ${g.length}</div><div class="cards">${g.map(a=>`<article class="card acard a${a.t}"><div class="hd"><span class="nm" style="display:flex;gap:8px;align-items:center">${augImg(a.n,32)}${esc(a.n)}</span><span class="cost">${tierLabel(a)}</span></div><div class="ab">${esc(a.d)}</div>
   ${a.set?`<div class="chips">${a.traits.map(x=>`<span class="pill band">${esc(x)}</span>`).join("")}${a.champs.map(n=>chip(CH[n],"add-go")).join("")}</div>`:""}
   <div style="margin-top:auto"><button class="btn sm ${(state.board.augs||[]).includes(a.n)?"on":""}" data-act="aug" data-a="${esc(a.n)}">${(state.board.augs||[]).includes(a.n)?"On your board":"Add to builder"}</button></div></article>`).join("")}</div>`:""}).join("")||`<p class="lead">No augment matches those filters.</p>`}
-function vAugs(){return `<h1>Set 19 augments</h1><p class="lead">${AUGS.length} augments: ${AUGS.filter(a=>a.t==="S").length} silver, ${AUGS.filter(a=>a.t==="G").length} gold, ${AUGS.filter(a=>a.t==="P").length} prismatic, plus ${AUGS.filter(a=>a.t==="H").length} hero augments known so far. ${AUGS.filter(a=>a.set).length} are tied to a Set 19 trait or champion.</p>
-<p class="note">Values are not published yet, and Riot can still add or cut augments before launch. Riot says the set has 363 augments including six hero augments; public builds list 333 so far and none of the hero augments, so the hero entries here come from the reveal and their names and tiers are unconfirmed. Text is a shortened summary; + and ++ versions are folded into the base augment.</p>
+function vAugs(){return `<h1>Set 19 augments</h1><p class="lead">${AUGS.length} augments from the PBE build: ${AUGS.filter(a=>a.hero).length} hero augments, ${AUGS.filter(a=>!a.hero&&a.t==="S").length} silver, ${AUGS.filter(a=>!a.hero&&a.t==="G").length} gold and ${AUGS.filter(a=>a.t==="P").length} prismatic. ${AUGS.filter(a=>a.set).length} are tied to a Set 19 trait or champion.</p>
+<p class="note">Numbers are from the PBE build (patch 19.1 preview, read 19 November) and can change before launch on 2 December. Hero augments turn one champion into a different role with a new ability. The five Prismatic Tour augments are the only way to start a Prismatic trait quest. Blind Box versions and the Pyramid Scheme copies handed to other players are folded together.</p>
 <div class="row filters"><input type="text" id="aq" placeholder="Search augments" value="${esc(ui.aq)}" aria-label="Search augments">
 ${[["","All"],["H","Hero"],["S","Silver"],["G","Gold"],["P","Prismatic"]].map(([k,l])=>`<button class="btn sm ${ui.atier===k?"on":""}" data-act="atier" data-k="${k}">${l}</button>`).join("")}
 <button class="btn sm ${ui.aset?"on":""}" data-act="aset">Trait and champion augments only</button>
@@ -539,15 +458,15 @@ function hexHTML(){const by={};state.board.units.forEach((u,i)=>by[u.h]=i);let h
 function editorHTML(){const u=state.board.units[ui.sel];if(!u)return `<p class="stat" style="margin:12px 0 0">Drag champions and items onto the board. Drag a unit to move or swap it, drag it off the board or right-click to remove it. On a phone, tap a champion to place it, tap a unit to select it, then tap items to equip them.</p>`;
   const ch=CH[u.n],its=(u.it||[]).filter(Boolean);
   return `<div class="editor"><div class="row">${av(ch,44)}<div><b>${esc(u.n)}</b><div class="stat">${esc(ch.t.join(" · "))}</div></div><span class="grow"></span>
-  ${[1,2,3].map(s=>`<button class="btn sm ${u.s===s?"on":""}" data-act="star" data-s="${s}">${"★".repeat(s)}</button>`).join("")}<button class="btn sm danger" data-act="remove">Remove</button></div>
+  ${[1,2,3].map(s=>`<button class="btn sm ${u.s===s?"on":""}" data-act="star" data-s="${s}">${"★".repeat(s)}</button>`).join("")}<button class="btn sm ${u.co?"on":""}" data-act="collab" title="Riot gives Collab to a different set of champions each game">Collab this game</button><button class="btn sm danger" data-act="remove">Remove</button></div>
   <div class="row">${[0,1,2].map(k=>its[k]?`<button class="slot" data-act="unitem" data-k="${k}" title="Remove ${esc(its[k])}">${itIcon(its[k],40)}</button>`:`<span class="slot empty"></span>`).join("")}<span class="stat">${its.length?"Tap an equipped item to remove it.":"Open the Items tab below and tap or drag an item to equip it."}</span></div>
   ${ch.u?`<div class="unlock">${esc(ch.u)}</div>`:""}</div>`}
 function traitsHTML(){const ts=calcTraits(state.board.units);if(!ts.length)return `<p class="stat">Traits appear here as you place champions.</p>`;
-  return ts.map(x=>{const nxt=x.def.bp.find(b=>b>x.count);return `<div class="tr ${x.idx<0?"off":""}"><span class="tn"><span class="rk ${x.rk}"></span>${esc(x.t)}</span><span class="tc">${x.count}${x.def.stars?"★":""}${nxt?` / ${nxt}`:""}</span>${bps(x.def,x.count)}<span></span>${x.idx>=0&&x.def.tiers[x.idx]?`<span class="stat" style="grid-column:1/-1">${esc(x.def.tiers[x.idx])}</span>`:""}</div>`}).join("")}
+  return ts.map(x=>{const nxt=x.def.bp.find(b=>b>x.count);return `<div class="tr ${x.idx<0?"off":""}"><span class="tn"><span class="rk ${x.rk}"></span>${trIcon(x.t,18)}${esc(x.t)}</span><span class="tc">${x.count}${x.def.stars?"★":""}${nxt?` / ${nxt}`:""}</span>${bps(x.def,x.count)}<span></span>${x.idx>=0&&x.def.tiers[x.idx]?`<span class="stat" style="grid-column:1/-1">${esc(x.def.tiers[x.idx])}</span>`:""}</div>`}).join("")}
 function pickHTML(){
   if(ui.ptab==="augs")return augPick();
   if(ui.ptab==="items"){const g=(lab,arr)=>`<div class="pgroup"><span>${lab}</span><div class="pgrid">${arr.map(n=>`<button class="itm ${ui.itemSel===n?"sel":""}" data-act="item" data-item="${esc(n)}">${itIcon(n,44)}<span>${esc(isEmb(n)?n.slice(8):n)}</span></button>`).join("")}</div></div>`;
-    return g("Components",COMPONENTS)+g("Completed",ITEMS)+g("Emblems",EMBLEMS)+`<p class="stat">Emblems add +1 to that trait. Set 19 emblem art and recipes are not published yet, so emblems show initials.</p>`}
+    return g("Components",COMPONENTS)+g("Completed",ITEMS)+g("Emblems",EMBLEMS)+`<p class="stat">Emblems add +1 to that trait. Choreographer, Hyperpop, Jazz, Manager, True Damage and Juggernaut emblems cannot be crafted; they come from augments and loot.</p>`}
   const q=ui.pq.toLowerCase(),on=new Set(state.board.units.map(u=>u.n));
   const list=CHAMPS.filter(c=>(!ui.ptrait||c.t.includes(ui.ptrait))&&(!q||(c.n+" "+c.t.join(" ")).toLowerCase().includes(q)));
   const tile=c=>`<button class="tile ${c.u?"lock":""} ${on.has(c.n)?"onb":""}" data-act="add" data-n="${esc(c.n)}" title="${esc(c.n+" · "+c.t.join(" · "))}">${av(c,50)}${ui.names?`<span>${esc(c.n.replace(/ \(.*/,m=>m.includes("True")?" TD":" K|DA"))}</span>`:""}</button>`;
@@ -697,13 +616,13 @@ function vEarly(){
   const openers=TRAITS.filter(t=>t.k!=="solo").map(t=>{const m=pool.filter(c=>c.t.includes(t.n));const cnt=t.stars?m.length*2:m.length;const hit=t.bp.filter(b=>b<=cnt).pop();return{t,m,hit}}).filter(o=>o.hit&&o.m.length>=2).sort((a,b)=>b.m.length-a.m.length);
   const early=CHAMPS.filter(c=>c.u&&c.c<=2);const L=LEVELING[ui.strat];
   return `<h1>Early game and gold</h1><p class="lead">What you can field from the opening shop, which quests you can start in Stage 2, and how much gold to hold at each stage.</p>
-<p class="note">The gold rules, XP costs, shop odds and pool sizes below are the live Set 18 values (patch 18.6). Set 19 adds four 7-costs that are all unlock-only, and Riot has not published their odds or any pool changes, so re-check these on your first PBE game (17 November). Level 11 exists only through Gu Feng's Scroll of the Beast and costs 999 XP. Gold targets per stage are rules of thumb.</p>
+<p class="note">The gold rules, XP costs, shop odds and pool sizes below are the live Set 18 values (patch 18.6). Set 19 adds four 7-costs that are all unlock-only, and Riot has not published their odds or any pool changes, Riot has also changed XP per level and pool sizes for Set 19 (the 19.1 PBE diff lists both) but no source shows the new values yet, so treat the XP and pool rows as Set 18 numbers. Level 11 exists only through Gu Feng's Scroll of the Beast and costs 999 XP. Gold targets per stage are rules of thumb.</p>
 <div class="grid2">
 <section class="panel"><h2>Traits you can open with</h2><p class="stat" style="margin:0 0 8px">Uses only 1- and 2-cost champions that need no quest. The number is the breakpoint those units reach.</p>
 ${openers.map(o=>`<div class="idea"><div class="row" style="justify-content:space-between"><b>${esc(o.t.n)} ${o.hit}${o.t.stars?"★ (at 2-star each)":""}</b><button class="btn sm" data-act="opener" data-t="${esc(o.t.n)}">Load</button></div><div class="chips">${o.m.map(c=>chip(c,"add-go")).join("")}</div></div>`).join("")}</section>
 <section class="panel"><h2>Quests you can start in Stage 2</h2><p class="stat" style="margin:0 0 8px">1- and 2-cost unlocks. Most want items on a matching unit, so slam early components to open them.</p>
 ${early.map(c=>`<div class="idea"><div class="row">${chip(c,"add-go")}<span class="stat">${esc(c.t.join(" · "))}</span></div><p>${esc(c.u)}</p></div>`).join("")}
-<div class="idea"><b>Chains worth knowing</b><p>Ziggs → Kobuko. Annie → Tibbers. Xayah → Wukong, Janna (45 interest), Lee Sin. Alune or Yone → Aphelios. Malzahar → Baron Nashor, the only 7-cost with no level gate. The two Akalis lock each other out. Most 4-cost unlocks also need level 7.</p></div></section>
+<div class="idea"><b>Chains worth knowing</b><p>Ziggs → Kobuko. Annie → Tibbers. Xayah → Wukong (25,000 damage), Janna (20 interest), Lee Sin (40 player damage). Alune or Yone → Aphelios. Malzahar → Baron Nashor, the only 7-cost with no level gate. The two Akalis lock each other out. Most 4-cost unlocks also need level 7.</p></div></section>
 <section class="panel"><h2>Level and gold by stage</h2><div class="row filters">${Object.entries(LEVELING).map(([k,v])=>`<button class="btn sm ${ui.strat===k?"on":""}" data-act="strat" data-k="${k}">${esc(v[0])}</button>`).join("")}</div>
 <div class="scroll"><table><thead><tr><th>Round</th><th>Level</th><th>Gold and action</th></tr></thead><tbody>${L[1].map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>
 <p class="stat" style="margin:10px 0 0">True Damage changes this: on the B-Side you are paid for losing, so test it with the reroll lines; on the A-Side use the win-streak line.</p></section>
@@ -717,15 +636,28 @@ ${early.map(c=>`<div class="idea"><div class="row">${chip(c,"add-go")}<span clas
 <h3 style="margin-top:14px">XP to next level</h3><div class="scroll"><table><thead><tr><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr></thead><tbody><tr><td>2</td><td>6</td><td>10</td><td>20</td><td>36</td><td>56</td><td>64</td><td>64</td></tr></tbody></table></div></section>
 <section class="panel" style="grid-column:1/-1"><h2>Shop odds by level and pool size</h2><div class="scroll"><table><thead><tr><th>Level</th>${[1,2,3,4,5].map(k=>`<th><span class="dot k${k}"></span> ${k}-cost</th>`).join("")}</tr></thead><tbody>${ODDS.map(r=>`<tr><td><b>${r[0]}</b></td>${r.slice(1).map(v=>`<td>${v?v+"%":"–"}</td>`).join("")}</tr>`).join("")}
 <tr><td>Copies each</td><td>30</td><td>25</td><td>18</td><td>10</td><td>9</td></tr></tbody></table></div>
-<p class="stat" style="margin:10px 0 0">Levels 7 to 9 and the pool sizes are confirmed for Set 18; the other rows are the long-standing values. 7-cost odds are not published.</p></section></div>`}
+<p class="stat" style="margin:10px 0 0">Set 18 values. Set 19 changed pool sizes, and 7-cost odds are not published; all four 7-costs only appear after you unlock them.</p></section></div>`}
 
 function vItems(){const short=["Sword","Bow","Rod","Tear","Vest","Cloak","Belt","Gloves"];
   return `<h1>Items</h1><p class="lead">The 36 core recipes. Read down from one component and across from the other.</p>
-<p class="note">Recipes are the live Set 18 list (patch 18.6); core items rarely change between sets but can. Riot has said Blue Buff, Crownguard and Rabadon's Deathcap are reworked for Set 19 without publishing the new effects. Set 19 emblem recipes (Spatula and Frying Pan) are not published. In the builder you can attach an emblem for any band or class to test a breakpoint, but some of those emblems may not exist or may not be craftable.</p>
+<p class="note">Core recipes are unchanged from Set 18. Several items were changed for Set 19 (listed below), and all emblems are new. Values are from the PBE build and can change before launch on 2 December.</p>
 <section class="panel"><div class="scroll"><table class="rec"><thead><tr><th></th>${short.map(s=>`<th>${s}</th>`).join("")}</tr></thead><tbody>
 ${COMPONENTS.map((c,i)=>`<tr><td><span class="rc">${itIcon(c,26)}${esc(c)}</span></td>${COMPONENTS.map((d,j)=>`<td class="${j<i?"e":""}"><span class="rc">${itIcon(recipe(i,j),26)}${esc(recipe(i,j))}</span></td>`).join("")}</tr>`).join("")}</tbody></table></div></section>
-<div class="grid2" style="margin-top:14px"><section class="panel"><h2>Spatula and Frying Pan</h2><table><tbody><tr><td>Spatula + Spatula</td><td>Tactician's Crown (+1 team size)</td></tr><tr><td>Spatula + Frying Pan</td><td>Tactician's Cape</td></tr><tr><td>Frying Pan + Frying Pan</td><td>Tactician's Shield</td></tr><tr><td>Spatula + component</td><td>Band emblem (Set 19 list not published)</td></tr><tr><td>Frying Pan + component</td><td>Class emblem (Set 19 list not published)</td></tr></tbody></table></section>
-<section class="panel"><h2>Items that open Set 19 quests</h2><ul class="tiers"><li><b>→</b>Any item on Ziggs: Kobuko. Any item on Annie: Tibbers.</li><li><b>→</b>Items on a Beach Pop unit: Ashe. On a Classical unit: Nasus, Renata Glasc, Samira.</li><li><b>→</b>Items on an Ionic Spark or Hitmaker unit: Jinx.</li><li><b>→</b>Chain Vest on a Caster or Marksman: Alistar.</li><li><b>→</b>Hitmaker gives its bonus to whoever holds the most items, so stack one carry.</li></ul></section></div>`}
+<div class="grid2" style="margin-top:14px"><section class="panel"><h2>Emblems</h2><p class="stat" style="margin:0 0 8px">Spatula makes band emblems, Frying Pan makes class emblems.</p><table><tbody>
+${Object.entries(EMBLEM_RECIPE).map(([t,r])=>`<tr><td><span class="rc">${itIcon("Emblem: "+t,24)}${esc(t)}</span></td><td>${esc(r)}</td></tr>`).join("")}
+<tr><td>Spatula + Spatula</td><td>Tactician's Crown (+1 team size)</td></tr><tr><td>Spatula + Frying Pan</td><td>Tactician's Cape</td></tr><tr><td>Frying Pan + Frying Pan</td><td>Tactician's Shield</td></tr>
+<tr><td colspan="2" class="stat">Not craftable: ${EMBLEM_NOCRAFT.join(", ")}. The Juggernaut Emblem also makes its holder Unstoppable and gives 5% Damage Amp per 1000 max Health.</td></tr></tbody></table></section>
+<section class="panel"><h2>Item changes for Set 19</h2><ul class="tiers">
+<li><b>↑</b>Ionic Spark: 350 Health (from 250).</li>
+<li><b>↑</b>Titan's Resolve: at full stacks, 15% max Health instead of 10% Damage Amp. Still Unstoppable.</li>
+<li><b>~</b>Blue Buff: now also 10% more AD and AP from all sources and 10 Mana at combat start.</li>
+<li><b>~</b>Crownguard: 20% max Health shield for 8 seconds at combat start; no AP on expiry, instead +25% healing and shielding received. 10 AP.</li>
+<li><b>~</b>Rabadon's Deathcap: 15% more AP from all sources instead of 15% Damage Amp.</li>
+<li><b>~</b>Deathblade: 15% more AD from all sources instead of 10% Damage Amp.</li>
+<li><b>~</b>Bloodthirster: triggers at 60% Health for a 25% max Health shield, then 15% Omnivamp for the rest of combat. 15% AD, 15 AP.</li>
+<li><b>↓</b>Sterak's Gage: triggers at 40% Health (from 60%).</li>
+</ul><p class="stat" style="margin:8px 0 0">From the 18.7 → 19.1 PBE diff on tftips.app. Radiant versions changed in the same direction.</p></section>
+<section class="panel"><h2>Items that open Set 19 quests</h2><ul class="tiers"><li><b>→</b>2-star Ziggs with 1 item: Kobuko. 2-star Annie with 1 item: Tibbers.</li><li><b>→</b>2 items on a Beach Pop unit: Ashe. 2 on a Classical unit: Nasus. 2 on a Classical or Choreographer unit: Renata Glasc. 2 on a Classical, Renegade or Trickshot unit: Samira.</li><li><b>→</b>Level 7 and 3 items on an Ionic Spark or Hitmaker unit: Jinx.</li><li><b>→</b>Level 7 and a Chain Vest on a Caster or Marksman: Alistar.</li><li><b>→</b>Hitmaker gives its bonus to whoever holds the most items, so stack one carry.</li></ul></section></div>`}
 
 /* ---------- RENDER + EVENTS ---------- */
 function render(){
@@ -777,6 +709,7 @@ document.addEventListener("click",e=>{if(noClick)return;const el=e.target.closes
     case "atier":ui.atier=el.dataset.k;break;
     case "aset":ui.aset=!ui.aset;break;
     case "batier":ui.batier=el.dataset.k;break;
+    case "collab":{const u=b.units[ui.sel];if(u){u.co=!u.co;save()}break}
     case "undo":timeTravel(undo,redo);break;
     case "redo":timeTravel(redo,undo);break;
     case "names":ui.names=!ui.names;break;
