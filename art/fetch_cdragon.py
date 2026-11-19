@@ -28,13 +28,13 @@ def asset_url(path):
     return f"{BASE}/game/{p}"
 
 
-def save(url, dest):
+def save(url, dest, headers=None):
     if os.path.exists(dest):
         return True
     try:
-        data = get(url)
+        data = urllib.request.urlopen(urllib.request.Request(url, headers={**UA, **(headers or {})}), timeout=60).read()
     except Exception as e:  # noqa: BLE001
-        print("  failed", url, e)
+        print("  failed", url.split("/")[-1][:60], e)
         return False
     if len(data) < 100:
         return False
@@ -92,7 +92,8 @@ def main():
         if not ok:
             # Fallback: the augment icon set tactics.tools serves, named "<Name><tier>.png"
             q = urllib.parse.quote(n.replace("|", "/"))
-            ok = save(f"https://ap.tft.tools/img/augments/{q}{tier_no[n]}.png?w=84", dest)
+            ok = save(f"https://ap.tft.tools/img/augments/{q}{tier_no[n]}.png?w=84", dest,
+                      {"Referer": "https://tactics.tools/", "Accept": "image/avif,image/webp,image/png,*/*"})
         if ok:
             have.add(slug(n))
         else:
