@@ -4,7 +4,7 @@ Writes img/augments/*.png, img/traits/*.png, adds emblem icons to img/items/, an
 a manifest.json in each folder listing the slugs that exist. Never fails the workflow:
 anything it cannot find is skipped and reported.
 """
-import json, os, re, sys, urllib.request
+import json, os, re, sys, urllib.parse, urllib.request
 
 BASE = "https://raw.communitydragon.org/pbe"
 UA = {"User-Agent": "Mozilla/5.0 (tft-set-19-lab art fetcher)"}
@@ -66,7 +66,7 @@ def main():
 
     by_name = {}
     for it in items:
-        n, icon = it.get("name"), it.get("icon")
+        n, icon = it.get("name") or "", it.get("icon") or ""
         if not n or not icon:
             continue
         k = norm(n)
@@ -75,15 +75,27 @@ def main():
 
     # Augments
     src = open("augments.js", encoding="utf-8").read().split("AUG_RAW=`", 1)[-1]
-    names = re.findall(r"^([^~\n`]+)~[SGP]~", src, flags=re.M)
+    rows = re.findall(r"^([^~\n`]+)~([SGP])~", src, flags=re.M)
+    names = [n for n, _ in rows]
+    tier_no = {n: {"S": 1, "G": 2, "P": 3}[t] for n, t in rows}
     os.makedirs("img/augments", exist_ok=True)
     have = load_manifest("img/augments/manifest.json")
     missing = []
     for n in names:
-        it = by_name.get(norm(n))
-        if it and save(asset_url(it["icon"]), f"img/augments/{slug(n)}.png"):
+        dest = f"img/augments/{slug(n)}.png"
+        if slug(n) in have and os.path.exists(dest):
+            continue
+        base = n.rstrip("+")
+        tries = [n, n + " I", base, base + " I", base.replace("|", "/")]
+        it = next((by_name[norm(x)] for x in tries if norm(x) in by_name), None)
+        ok = bool(it) and save(asset_url(it["icon"]), dest)
+        if not ok:
+            # Fallback: the augment icon set tactics.tools serves, named "<Name><tier>.png"
+            q = urllib.parse.quote(n.replace("|", "/"))
+            ok = save(f"https://ap.tft.tools/img/augments/{q}{tier_no[n]}.png?w=84", dest)
+        if ok:
             have.add(slug(n))
-        elif slug(n) not in have:
+        else:
             missing.append(n)
     json.dump(sorted(have), open("img/augments/manifest.json", "w"))
     print(f"augment icons: {len(have)} of {len(names)}; missing: {missing[:40]}")
@@ -96,7 +108,7 @@ def main():
     items_have = load_manifest("img/items/manifest.json")
     got = 0
     for t in emblems:
-        cands = [it for it in items if norm(it.get("name", "")) == norm(t + " Emblem") and it.get("icon")]
+        cands = [it for it in items if norm(it.get("name") or "") == norm(t + " Emblem") and it.get("icon")]
         cands.sort(key=score, reverse=True)
         key = slug(t + "emblem")
         if cands and save(asset_url(cands[0]["icon"]), f"img/items/{key}.png"):
@@ -112,7 +124,7 @@ def main():
     tr_have = load_manifest("img/traits/manifest.json")
     if s19:
         for tr in s19[-1].get("traits", []):
-            n, icon = tr.get("name"), tr.get("icon")
+            n, icon = tr.get("name") or "", tr.get("icon") or ""
             if n and icon and save(asset_url(icon), f"img/traits/{slug(n.replace('K/DA', 'K|DA'))}.png"):
                 tr_have.add(slug(n.replace("K/DA", "K|DA")))
     json.dump(sorted(tr_have), open("img/traits/manifest.json", "w"))
